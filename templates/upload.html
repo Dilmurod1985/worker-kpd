@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Загрузить отчёт бригадира</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            background: #f0f8ff; 
+            padding: 40px; 
+            text-align: center; 
+        }
+        .container { 
+            max-width: 500px; 
+            margin: auto; 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+        }
+        input[type=file] { 
+            margin: 20px 0; 
+            padding: 10px;
+        }
+        button { 
+            padding: 12px 30px; 
+            background: #009688; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #00796b;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 16px;
+            font-weight: bold;
+            color: #333;
+            min-height: 20px;
+        }
+        #progressContainer {
+            width: 100%;
+            background: #eee;
+            height: 20px;
+            border-radius: 6px;
+            margin-top: 12px;
+            overflow: hidden;
+            display: none;
+        }
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background: #009688;
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: left;
+        }
+        #result ul {
+            list-style-position: inside;
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: left;
+        }
+        #result li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        #result li:last-child {
+            border-bottom: none;
+        }
+        .error {
+            color: #d32f2f;
+        }
+        .success {
+            color: #388e3c;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #f0f0f0;
+            text-decoration: none;
+            border-radius: 6px;
+            color: #333;
+        }
+        a:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Загрузить отчёт бригадира</h1>
+        <p>Сфотографируй табель → система сама занесёт кг и баллы</p>
+        
+        <form id="uploadForm" method="post" enctype="multipart/form-data">
+            <label for="photoInput">Выберите файл:</label>
+            <input type="file" id="photoInput" name="photo" accept="image/*" required>
+            <br>
+            <button type="button" id="uploadBtn">Загрузить и обработать</button>
+        </form>
+
+        <div id="status"></div>
+        <div id="progressContainer">
+            <div id="progressBar"></div>
+        </div>
+
+        <div id="result"></div>
+
+        <a href="/input">← Ввод вручную</a> | <a href="/tabel">Таблица →</a>
+    </div>
+
+    <script>
+        const uploadBtn = document.getElementById('uploadBtn');
+        const photoInput = document.getElementById('photoInput');
+        const status = document.getElementById('status');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const resultDiv = document.getElementById('result');
+
+        // Обновить кнопку при выборе файла
+        photoInput.addEventListener('change', function() {
+            if (this.files[0]) {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Загрузить и обработать (' + this.files[0].name + ')';
+            } else {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'Загрузить и обработать';
+            }
+        });
+
+        uploadBtn.addEventListener('click', function() {
+            const file = photoInput.files[0];
+            if (!file) {
+                status.innerHTML = '<span class="error">Выберите файл</span>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('photo', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    progressContainer.style.display = 'block';
+                    progressBar.style.width = pct + '%';
+                    progressBar.textContent = pct + '%';
+                    status.innerHTML = '<span>Загрузка файла: ' + pct + '%</span>';
+                }
+            });
+
+            xhr.onloadstart = function() {
+                status.innerHTML = '<span>Загрузка файла...</span>';
+                progressContainer.style.display = 'block';
+                resultDiv.innerHTML = '';
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                    status.innerHTML = '<span class="success">Обработка завершена...</span>';
+                    
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        console.log('Ответ сервера:', data);
+                        
+                        if (data.added && data.added > 0) {
+                            status.innerHTML = `<span class="success">✓ Успешно обработано записей: ${data.added}</span>`;
+                            
+                            if (data.records && data.records.length > 0) {
+                                let html = '<strong>Распознанные записи:</strong><ul>';
+                                data.records.forEach(r => {
+                                    html += `<li><strong>ID ${r.id}</strong> — ${r.fio || '?'} — <strong>${r.quantity_kg} кг</strong></li>`;
+                                });
+                                html += '</ul>';
+                                resultDiv.innerHTML = html;
+                            } else {
+                                resultDiv.innerHTML = '<span class="success">Записи добавлены, но детали не доступны</span>';
+                            }
+                        } else {
+                            status.innerHTML = '<span class="error">Ошибка: записи не найдены в фото</span>';
+                            resultDiv.innerHTML = '<span>Проверьте качество фото и формат табели</span>';
+                        }
+                    } catch (e) {
+                        console.error('Ошибка парсинга JSON:', e);
+                        console.log('Текст ответа:', xhr.responseText);
+                        status.innerHTML = '<span class="error">Ошибка обработки ответа сервера: ' + e.message + '</span>';
+                    }
+                } else {
+                    progressBar.style.width = '100%';
+                    status.innerHTML = `<span class="error">Ошибка на сервере (${xhr.status})</span>`;
+                    resultDiv.innerHTML = '<span class="error">' + xhr.responseText + '</span>';
+                    console.error('HTTP ошибка:', xhr.status, xhr.responseText);
+                }
+            };
+
+            xhr.onerror = function() {
+                status.innerHTML = '<span class="error">Ошибка при отправке файла</span>';
+                console.error('Ошибка XHR:', xhr);
+            };
+
+            uploadBtn.disabled = true;
+            status.innerHTML = '<span>Начинаю загрузку...</span>';
+            xhr.send(formData);
+        });
+
+        // Загрузить по Enter
+        photoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                uploadBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

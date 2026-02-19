@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ввод производства</title>
+    <style>
+        body { font-family: Arial; background: #e0f7fa; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #00695c; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; color: #004d40; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #b2dfdb; border-radius: 6px; box-sizing: border-box; }
+        button { background: #009688; color: white; padding: 14px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1.1em; }
+        button:hover { background: #00796b; }
+        .success { background: #c8e6c9; color: #1b5e20; padding: 15px; margin: 15px 0; border-radius: 6px; text-align: center; }
+        .error { background: #ffcdd2; color: #b71c1c; padding: 15px; margin: 15px 0; border-radius: 6px; text-align: center; }
+        .back { text-align: center; margin-top: 20px; }
+        .back a { color: #00695c; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ввод производства</h1>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+            <div class="success">{{ success }}</div>
+        {% endif %}
+
+        <form method="post">
+            <label for="worker_id">ID работника</label>
+            <input type="number" name="worker_id" id="worker_id" min="1" placeholder="Введите ID">
+
+            <label for="fio">ФИО работника</label>
+            <select name="fio" id="fio" required>
+                <option value="">Выберите...</option>
+                {% for w in workers %}
+                    <option value="{{ w.fio }}" data-id="{{ w.id }}" data-category="{{ w.category }}">{{ w.fio }} ({{ w.category }})</option>
+                {% endfor %}
+            </select>
+
+            <label>Товар</label>
+            <select name="product" required>
+                <option value="">Выберите...</option>
+                {% for p in products %}
+                    <option value="{{ p }}">{{ p }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="quantity">Количество штук</label>
+            <input type="number" name="quantity" id="quantity" min="0" required>
+
+            <label for="caliber_kg">Калибр Go'sht (кг/шт)</label>
+            <select name="caliber_kg" id="caliber" required>
+                <option value="">Выберите калибр...</option>
+                {% for kg in caliber_options %}
+                    <option value="{{ kg }}">{{ kg }} кг/шт</option>
+                {% endfor %}
+            </select>
+
+            <div style="margin-top:20px;">
+                <label>Чек-лист дисциплины (баллы за смену)</label>
+                {% for cat in checklist %}
+                    <div style="margin:10px 0;">
+                        <label>{{ cat.name }} (0–{{ cat.max_points }})</label>
+                        <input type="number" name="checklist_{{ loop.index }}" min="0" max="{{ cat.max_points }}" value="0" style="width:80px;">
+                    </div>
+                {% endfor %}
+            </div>
+
+            <small id="bonus_hint" style="display:block; margin-top:10px; color:#f39c12; font-weight:bold;">
+                Итоговый бонус: 0%
+            </small>
+
+            <small id="norm_hint" style="display:block; margin-top:8px; color:#8e44ad; font-weight:bold;">
+                Норма: 0 кг | Выполнено: 0%
+            </small>
+
+            <small id="calc_hint" style="display:block; margin-top:8px; color:#00695c; font-weight:bold;">
+                0 шт × 0 кг = 0 кг
+            </small>
+
+            <small id="salary_hint" style="display:block; margin-top:8px; color:#27ae60; font-weight:bold; font-size:1.1em;">
+                З/п за смену: 0 сум | Бонус: 20%
+            </small>
+
+            <label>Дата</label>
+            <input type="date" name="date" id="date" required>
+
+            <button type="submit">Добавить запись</button>
+        </form>
+
+        <div class="back">
+            <a href="/tabel">→ Перейти в табель</a>
+        </div>
+    </div>
+
+    <script>
+    // Данные суточных ставок по категориям
+    const dailyRates = {
+        {% for category, rate in daily_rates.items() %}
+            "{{ category }}": {{ rate }}{{ "," if not loop.last else "" }}
+        {% endfor %}
+    };
+
+    // Автозаполнение ФИО по ID и обновление з/п
+    document.getElementById('worker_id').addEventListener('input', function() {
+        const id = this.value.trim();
+        if (!id) return;
+
+        const select = document.getElementById('fio');
+        for (let option of select.options) {
+            if (option.dataset.id === id) {
+                select.value = option.value;
+                updateSalary();
+                break;
+            }
+        }
+    });
+
+    // Обновление з/п при изменении работника
+    document.getElementById('fio').addEventListener('change', updateSalary);
+
+    // Расчёт кг и обновление з/п
+    function updateCalc() {
+        const qty = parseFloat(document.getElementById('quantity').value) || 0;
+        const kg = parseFloat(document.getElementById('caliber').value) || 0;
+        const total = qty * kg;
+        document.getElementById('calc_hint').textContent = 
+            qty + ' шт × ' + kg + ' кг = ' + total.toFixed(1) + ' кг';
+        updateSalary();
+        updateNorm();
+    }
+
+    // Обновление отображаемой з/п по категории
+    function updateSalary() {
+        const select = document.getElementById('fio');
+        const selectedOption = select.options[select.selectedIndex];
+        const category = selectedOption.dataset.category || '';
+        const rate = dailyRates[category] || 0;
+        
+        document.getElementById('salary_hint').textContent = 
+            'З/п за смену: ' + rate.toLocaleString('ru-RU') + ' сум | Бонус: 20%';
+    }
+
+    document.getElementById('quantity').addEventListener('input', updateCalc);
+    document.getElementById('caliber').addEventListener('change', updateCalc);
+
+    // Сегодняшняя дата
+    document.getElementById('date').valueAsDate = new Date();
+
+    // Запуск расчёта при загрузке
+    updateCalc();
+
+    // Чек-лист бонуса
+    function updateBonus() {
+        let total = 0;
+        document.querySelectorAll('input[name^="checklist_"]').forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        let percent = 0;
+        if (total >= 90) percent = 100;
+        else if (total >= 75) percent = 75;
+        else if (total >= 60) percent = 50;
+        document.getElementById('bonus_hint').textContent = 'Итоговый бонус: ' + percent + '%';
+    }
+
+    // Норма и % выполнения
+    function updateNorm() {
+        const kg = parseFloat(document.getElementById('calc_hint').textContent.match(/= ([\d.]+)/)?.[1] || 0);
+        const category = document.getElementById('fio').options[document.getElementById('fio').selectedIndex]?.dataset.category || "";
+        const norm = {{ kg_norms | tojson | safe }}[category] || 0;
+        const percent = norm > 0 ? (kg / norm * 100).toFixed(1) : 0;
+        document.getElementById('norm_hint').textContent = 
+            'Норма: ' + norm + ' кг | Выполнено: ' + percent + '%';
+    }
+
+    document.querySelectorAll('input[name^="checklist_"]').forEach(input => {
+        input.addEventListener('input', updateBonus);
+    });
+    updateBonus(); // при загрузке
+    updateNorm(); // при загрузке
+</script>
+</body>
+</html>
