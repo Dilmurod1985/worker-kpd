@@ -112,6 +112,12 @@ def calculate_bonus_percent(total_points):
         return 0
 
 
+@app.route("/")
+def index():
+    """Главная страница — редирект на табель"""
+    return redirect("/tabel")
+
+
 @app.route("/input", methods=["GET", "POST"])
 def input_prod():
     success = None
