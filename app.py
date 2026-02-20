@@ -199,7 +199,7 @@ def input_prod():
                     error = "Ошибка: работник не найден!"
                 else:
                     category = worker.get("category", "")
-                    daily_rate = worker.get("daily_rate", 0)
+                    daily_rate = DAILY_RATES.get(category, 0)
                     daily_salary = daily_rate  # фиксированная ставка за день
 
                     # Расчет нормы и % выполнения
