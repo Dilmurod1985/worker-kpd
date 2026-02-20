@@ -2,21 +2,21 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Отчёт за месяц по категориям</title>
+    <title>Отчёт за месяц по отделам и работникам</title>
     <style>
         body { font-family: Arial; background: #f0f8ff; padding: 20px; }
         .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #00695c; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        h2 { margin-top: 30px; color: #004d40; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #009688; color: white; }
-        .grand { background: #e0f2f1; font-weight: bold; }
         form { text-align: center; margin: 20px 0; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Отчёт за месяц по категориям</h1>
+        <h1>Отчёт за месяц по отделам и работникам</h1>
 
         <form method="post">
             <label>Выберите месяц:</label>
@@ -24,35 +24,42 @@
             <button type="submit">Показать отчёт</button>
         </form>
 
-        {% if categories %}
-            <table>
-                <tr>
-                    <th>Категория</th>
-                    <th>Работников</th>
-                    <th>Всего кг</th>
-                    <th>Всего з/п (сум)</th>
-                    <th>Среднее выполнение (%)</th>
-                    <th>Средний бонус (%)</th>
-                </tr>
-                {% for cat in categories %}
-                <tr>
-                    <td>{{ cat.category }}</td>
-                    <td>{{ cat.workers_count }}</td>
-                    <td>{{ cat.total_kg }}</td>
-                    <td>{{ cat.total_salary | format_sum }}</td>
-                    <td>{{ cat.avg_complete }}</td>
-                    <td>{{ cat.avg_bonus }}</td>
-                </tr>
-                {% endfor %}
-                <tr class="grand">
-                    <td>Итого</td>
-                    <td>-</td>
-                    <td>{{ grand_total_kg }}</td>
-                    <td>{{ grand_total_salary | format_sum }}</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-            </table>
+        {% if report %}
+            {% for dept in report %}
+                <h2>{{ dept.otdel }}</h2>
+                <table>
+                    <tr>
+                        <th>ФИО</th>
+                        <th>Всего кг</th>
+                        <th>Всего з/п (сум)</th>
+                        <th>Среднее выполнение (%)</th>
+                        <th>Средний бонус (%)</th>
+                    </tr>
+                    {% for worker in dept.workers %}
+                        <tr>
+                            <td>{{ worker.fio }}</td>
+                            <td>{{ worker.total_kg }}</td>
+                            <td>{{ worker.total_salary | format_sum }}</td>
+                            <td>{{ worker.avg_complete }}</td>
+                            <td>{{ worker.avg_bonus }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr style="font-weight:bold; background:#e0f2f1;">
+                        <td>Итого по отделу</td>
+                        <td>{{ dept.total_kg }}</td>
+                        <td>{{ dept.total_salary | format_sum }}</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                </table>
+                <br>
+            {% endfor %}
+
+            <div style="background:#d1f2eb; padding:15px; border-radius:8px; text-align:center;">
+                <strong>Общий итог за месяц:</strong><br>
+                Всего кг: {{ grand_total_kg }}<br>
+                Всего з/п: {{ grand_total_salary | format_sum }} сум
+            </div>
         {% endif %}
 
         <div style="text-align:center; margin-top:30px;">

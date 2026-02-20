@@ -507,51 +507,77 @@ def monthly_report():
             if r["date"].startswith(f"{year}-{mon:02d}")
         ]
 
-        # Группировка по категории
-        by_category = defaultdict(lambda: {
-            "workers": set(),
+        # Группировка: сначала по отделу, затем по ФИО
+        by_otdel = defaultdict(lambda: defaultdict(lambda: {
             "total_kg": 0,
             "total_salary": 0,
-            "total_points": 0,
             "count": 0,
-            "total_complete": 0
-        })
+            "total_complete": 0,
+            "total_points": 0
+        }))
 
         for r in monthly_records:
-            cat = r.get("category", "Неизвестно")
-            by_category[cat]["workers"].add(r["worker_id"])
-            by_category[cat]["total_kg"] += r.get("quantity_kg", 0)
-            by_category[cat]["total_salary"] += r.get("daily_salary", 0)
-            by_category[cat]["total_points"] += r.get("total_points", 0)
-            by_category[cat]["count"] += 1
-            by_category[cat]["total_complete"] += r.get("percent_complete", 0)
+            otdel = r.get("otdel", "Неизвестно")
+            fio = r.get("fio", "Неизвестно")
+            data = by_otdel[otdel][fio]
+            data["total_kg"] += r.get("quantity_kg", 0)
+            data["total_salary"] += r.get("daily_salary", 0)
+            data["count"] += 1
+            data["total_complete"] += r.get("percent_complete", 0)
+            data["total_points"] += r.get("total_points", 0)
 
-        # Итоги по категориям
-        categories_report = []
+        # Формируем отчёт по отделам и работникам
+        report = []
         grand_total_kg = 0
         grand_total_salary = 0
-        for cat, data in by_category.items():
-            avg_complete = data["total_complete"] / data["count"] if data["count"] > 0 else 0
-            avg_bonus = data["total_points"] / data["count"] if data["count"] > 0 else 0
-            categories_report.append({
-                "category": cat,
-                "workers_count": len(data["workers"]),
-                "total_kg": round(data["total_kg"], 1),
-                "total_salary": int(data["total_salary"]),
-                "avg_complete": round(avg_complete, 1),
-                "avg_bonus": round(avg_bonus, 1)
+
+        for otdel, workers in by_otdel.items():
+            otdel_total_kg = 0
+            otdel_total_salary = 0
+            otdel_workers = []
+
+            for fio, data in workers.items():
+                avg_complete = data["total_complete"] / data["count"] if data["count"] > 0 else 0
+                avg_bonus = data["total_points"] / data["count"] if data["count"] > 0 else 0
+
+                otdel_workers.append({
+                    "fio": fio,
+                    "total_kg": round(data["total_kg"], 1),
+                    "total_salary": int(data["total_salary"]),
+                    "avg_complete": round(avg_complete, 1),
+                    "avg_bonus": round(avg_bonus, 1)
+                })
+
+                otdel_total_kg += data["total_kg"]
+                otdel_total_salary += data["total_salary"]
+
+            report.append({
+                "otdel": otdel,
+                "workers": otdel_workers,
+                "total_kg": round(otdel_total_kg, 1),
+                "total_salary": int(otdel_total_salary)
             })
-            grand_total_kg += data["total_kg"]
-            grand_total_salary += data["total_salary"]
 
-        return render_template("monthly_report.html",
-                              month=month,
-                              categories=categories_report,
-                              grand_total_kg=round(grand_total_kg, 1),
-                              grand_total_salary=grand_total_salary)
+            grand_total_kg += otdel_total_kg
+            grand_total_salary += otdel_total_salary
 
-    # GET — форма выбора месяца
-    return render_template("monthly_report.html")
+        return render_template(
+            "monthly_report.html",
+            month=month,
+            report=report,
+            grand_total_kg=round(grand_total_kg, 1),
+            grand_total_salary=grand_total_salary
+        )
+
+    # GET — форма выбора месяца (пока без отчёта)
+    current_month = datetime.now().strftime("%Y-%m")
+    return render_template(
+        "monthly_report.html",
+        month=current_month,
+        report=None,
+        grand_total_kg=0,
+        grand_total_salary=0
+    )
 
 
 if __name__ == "__main__":
