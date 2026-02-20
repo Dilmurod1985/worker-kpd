@@ -36,7 +36,7 @@
             <select name="fio" id="fio" required>
                 <option value="">Выберите...</option>
                 {% for w in workers %}
-                    <option value="{{ w.fio }}" data-id="{{ w.id }}" data-category="{{ w.category }}">{{ w.fio }} ({{ w.category }})</option>
+                    <option value="{{ w.fio }}" data-id="{{ w.id | string }}" data-category="{{ w.category }}">{{ w.fio }} ({{ w.category }})</option>
                 {% endfor %}
             </select>
 
@@ -106,12 +106,12 @@
 
     // Автозаполнение ФИО по ID и обновление з/п
     document.getElementById('worker_id').addEventListener('input', function() {
-        const id = this.value.trim();
+        let id = this.value.trim();  // уже строка
         if (!id) return;
 
         const select = document.getElementById('fio');
         for (let option of select.options) {
-            if (option.dataset.id === id) {
+            if (option.dataset.id === id) {  // сравниваем строки
                 select.value = option.value;
                 updateSalary();
                 break;
