@@ -272,6 +272,8 @@
                 <th style="text-align:right;">Общий вес (кг)</th>
                 <th style="text-align:right;">Коэф. з/п</th>
                 <th style="text-align:right;">З/п за смену (сум)</th>
+                <th style="text-align:right;">З/п полная (сум)</th>
+                <th style="text-align:right;">Урезано (сум)</th>
                 <th style="text-align:right;">Баллы всего</th>
                 <th style="text-align:right;">Бонус %</th>
                 <th style="text-align:right;">Норма (кг)</th>
@@ -291,6 +293,14 @@
                 <td style="text-align:right;">{{ "%.1f" | format(r.quantity_kg) }}</td>
                 <td style="text-align:right;">{{ r.salary_coeff }}×</td>
                 <td style="text-align:right; color:#27ae60; font-weight:bold;">{{ r.daily_salary | format_sum }}</td>
+                <td style="text-align:right; color:#27ae60;">{{ r.full_salary | format_sum }}</td>
+                <td style="text-align:right; color:#e74c3c; font-weight:bold;">
+                    {% if r.reduced_amount > 0 %}
+                        -{{ r.reduced_amount | format_sum }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </td>
                 <td style="text-align:right;">{{ r.total_points }}</td>
                 <td style="text-align:right;" style="color: {% if r.bonus_percent >= 15 %}#27ae60{% elif r.bonus_percent > 0 %}#f39c12{% else %}#e74c3c{% endif %};">{{ r.bonus_percent }}%</td>
                 <td style="text-align:right;">{{ r.norm_kg }}</td>

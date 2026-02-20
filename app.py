@@ -227,6 +227,9 @@ def input_prod():
 
                     daily_salary = int(daily_rate * salary_coeff)
 
+                    full_salary = daily_rate  # полная ставка без коэффициента
+                    reduced_amount = full_salary - daily_salary  # сколько урезано
+
                     # Чек-лист дисциплины
                     checklist_points = {}
                     total_points = 0
@@ -247,6 +250,8 @@ def input_prod():
                         "daily_rate": daily_rate,
                         "salary_coeff": salary_coeff,
                         "daily_salary": daily_salary,
+                        "full_salary": full_salary,
+                        "reduced_amount": reduced_amount,
                         "bonus_percent": bonus_percent,
                         "date": date,
                         "source": "manual",
@@ -344,7 +349,7 @@ def export_excel():
     ws['A2'].font = Font(size=12)
 
     # Столбцы
-    headers = ["ID", "ФИО", "Товар", "Категория", "Кол-во (шт)", "Калибр (кг)", "Общий вес (кг)", "З/п за смену (сум)", "Баллы всего", "Бонус %", "Норма (кг)", "Выполнено (%)", "Источник", "Дата"]
+    headers = ["ID", "ФИО", "Товар", "Категория", "Кол-во (шт)", "Калибр (кг)", "Общий вес (кг)", "З/п полная (сум)", "З/п за смену (сум)", "Урезано (сум)", "Коэф. з/п", "Баллы всего", "Бонус %", "Норма (кг)", "Выполнено (%)", "Источник", "Дата"]
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=3, column=col, value=header)
         cell.font = Font(bold=True)
@@ -361,7 +366,10 @@ def export_excel():
             record.get("quantity_pieces", 0),
             record.get("caliber_kg", 0),
             record.get("quantity_kg", 0),
+            record.get("full_salary", 0),
             record.get("daily_salary", 0),
+            record.get("reduced_amount", 0),
+            record.get("salary_coeff", 1.0),
             record.get("total_points", 0),
             record.get("bonus_percent", 0),
             record.get("norm_kg", 0),
@@ -373,15 +381,19 @@ def export_excel():
 
     # Итоги
     total_kg = sum(r.get("quantity_kg", 0) for r in filtered)
+    total_full_salary = sum(r.get("full_salary", 0) for r in filtered)
     total_salary_sum = sum(r.get("daily_salary", 0) for r in filtered)
+    total_reduced = sum(r.get("reduced_amount", 0) for r in filtered)
 
     ws.append([])
     # Строка итогов должна иметь столько же столбцов, сколько headers
     totals_row_values = [
         "Итого:", "", "", "", "", "",
         total_kg,
+        total_full_salary,
         total_salary_sum,
-        "", "", "", "", "", ""
+        total_reduced,
+        "", "", "", "", "", "", ""
     ]
     ws.append(totals_row_values)
     totals_row_index = row + 1
@@ -389,6 +401,10 @@ def export_excel():
     ws.cell(row=totals_row_index, column=7).number_format = '#,##0.0'
     ws.cell(row=totals_row_index, column=8).font = Font(bold=True)
     ws.cell(row=totals_row_index, column=8).number_format = '#,##0'
+    ws.cell(row=totals_row_index, column=9).font = Font(bold=True)
+    ws.cell(row=totals_row_index, column=9).number_format = '#,##0'
+    ws.cell(row=totals_row_index, column=10).font = Font(bold=True)
+    ws.cell(row=totals_row_index, column=10).number_format = '#,##0'
 
     # Автоширина столбцов
     for col in range(1, len(headers)+1):
