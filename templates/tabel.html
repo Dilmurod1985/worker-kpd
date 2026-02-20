@@ -290,7 +290,7 @@
                 <td style="text-align:right;">{{ "%.1f" | format(r.quantity_kg) }}</td>
                 <td style="text-align:right; color:#27ae60; font-weight:bold;">{{ r.daily_salary | format_sum }}</td>
                 <td style="text-align:right;">{{ r.total_points }}</td>
-                <td style="text-align:right;" class="{% if r.bonus_percent >= 75 %}bonus-good{% else %}bonus-warning{% endif %}">{{ r.bonus_percent }}%</td>
+                <td style="text-align:right;" style="color: {% if r.bonus_percent >= 15 %}#27ae60{% elif r.bonus_percent > 0 %}#f39c12{% else %}#e74c3c{% endif %};">{{ r.bonus_percent }}%</td>
                 <td style="text-align:right;">{{ r.norm_kg }}</td>
                 <td style="text-align:right; color: {% if r.percent_complete >= 100 %}#27ae60{% elif r.percent_complete >= 80 %}#f39c12{% else %}#e74c3c{% endif %};">{{ r.percent_complete }}%</td>
                 <td>

@@ -206,6 +206,14 @@ def input_prod():
                     norm_kg = KG_NORMS.get(category, 0)
                     percent_complete = (quantity_kg / norm_kg * 100) if norm_kg > 0 else 0
 
+                    # Расчет бонуса по норме
+                    if percent_complete >= 100:
+                        bonus_percent = 20
+                    elif percent_complete >= 80:
+                        bonus_percent = 10
+                    else:
+                        bonus_percent = 0
+
                     # Чек-лист дисциплины
                     checklist_points = {}
                     total_points = 0
@@ -214,8 +222,6 @@ def input_prod():
                         points = int(request.form.get(key, 0))
                         checklist_points[cat["name"]] = points
                         total_points += points
-
-                    bonus_percent = calculate_bonus_percent(total_points)
 
                     record = {
                         "worker_id": worker["id"],

@@ -190,6 +190,11 @@
         const percent = norm > 0 ? (kg / norm * 100).toFixed(1) : 0;
         document.getElementById('norm_hint').textContent = 
             'Норма: ' + norm + ' кг | Выполнено: ' + percent + '%';
+
+        let bonus = 0;
+        if (percent >= 100) bonus = 20;
+        else if (percent >= 80) bonus = 10;
+        document.getElementById('bonus_hint').textContent = 'Бонус по норме: ' + bonus + '%';
     }
 
     document.querySelectorAll('input[name^="checklist_"]').forEach(input => {
