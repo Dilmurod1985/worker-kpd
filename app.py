@@ -351,17 +351,24 @@ def delete_record(index):
 
 @app.route("/tabel")
 def tabel():
-    otdel_filter = request.args.get("otdel", "Все")
+    otdel_filter = request.args.get("otdel", "Все").strip()
     date_filter = request.args.get("date")
     filtered_prod = DAILY_PROD
 
+    # Фильтрация по отделу с нормализацией
     if otdel_filter != "Все":
-        filtered_prod = [r for r in DAILY_PROD if r.get("otdel") == otdel_filter]
+        otdel_filter_norm = otdel_filter.lower().replace(" ", "")
+        filtered_prod = [
+            r for r in DAILY_PROD 
+            if r.get("otdel", "").lower().replace(" ", "") == otdel_filter_norm
+        ]
+        print(f"Фильтр по отделу: '{otdel_filter}' (нормализовано: '{otdel_filter_norm}')")
+        print(f"Записей после фильтра: {len(filtered_prod)}")
+    else:
+        print(f"Фильтр по отделу: 'Все' (показываем все записи)")
 
     if date_filter:
-        filtered_prod = [r for r in DAILY_PROD if r["date"] == date_filter]
-    else:
-        filtered_prod = DAILY_PROD
+        filtered_prod = [r for r in filtered_prod if r["date"] == date_filter]
     
     # Рассчитываем итоги за день/фильтр
     total_records = len(filtered_prod)
@@ -374,6 +381,8 @@ def tabel():
     total_salary_formatted = "{:,}".format(int(total_salary)).replace(",", " ")
     monthly_salary_formatted = "{:,}".format(int(monthly_salary)).replace(",", " ")
     
+    has_records = len(filtered_prod) > 0
+    
     return render_template("tabel.html", 
                           workers=WORKERS_TABLE,
                           daily_prod=filtered_prod,
@@ -384,7 +393,8 @@ def tabel():
                           monthly_salary=monthly_salary,
                           total_salary_formatted=total_salary_formatted,
                           monthly_salary_formatted=monthly_salary_formatted,
-                          otdel_filter=otdel_filter)
+                          otdel_filter=otdel_filter,
+                          has_records=has_records)
 
 
 @app.route("/export")

@@ -283,72 +283,87 @@
         </div>
         {% endif %}
 
-        <h2>📋 Таблица записей</h2>
-        {% if daily_prod %}
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>ФИО</th>
-                <th>Отдел</th>
-                <th>Товар</th>
-                <th>Категория</th>
-                <th style="text-align:right;">Кол-во (шт)</th>
-                <th style="text-align:right;">Калибр (кг)</th>
-                <th style="text-align:right;">Общий вес (кг)</th>
-                <th style="text-align:right;">Коэф. з/п</th>
-                <th style="text-align:right;">З/п за смену (сум)</th>
-                <th style="text-align:right;">З/п полная (сум)</th>
-                <th style="text-align:right;">Урезано (сум)</th>
-                <th style="text-align:right;">Баллы всего</th>
-                <th style="text-align:right;">Бонус %</th>
-                <th style="text-align:right;">Норма (кг)</th>
-                <th style="text-align:right;">Выполнено (%)</th>
-                <th>Источник</th>
-                <th>Дата</th>
-                <th>Действия</th>
-            </tr>
-            {% for r in daily_prod %}
-            <tr class="source-{{ r.source }}">
-                <td><strong>{{ r.worker_id }}</strong></td>
-                <td>{{ r.fio }}</td>
-                <td>{{ r.otdel }}</td>
-                <td>{{ r.product }}</td>
-                <td>{{ r.category }}</td>
-                <td style="text-align:right;">{{ r.quantity_pieces }}</td>
-                <td style="text-align:right;">{{ r.caliber_kg }}</td>
-                <td style="text-align:right;">{{ "%.1f" | format(r.quantity_kg) }}</td>
-                <td style="text-align:right;">{{ r.salary_coeff }}×</td>
-                <td style="text-align:right; color:#27ae60; font-weight:bold;">{{ r.daily_salary | format_sum }}</td>
-                <td style="text-align:right; color:#27ae60;">{{ r.full_salary | format_sum }}</td>
-                <td style="text-align:right; color:#e74c3c; font-weight:bold;">
-                    {% if r.reduced_amount > 0 %}
-                        -{{ r.reduced_amount | format_sum }}
-                    {% else %}
-                        0
-                    {% endif %}
-                </td>
-                <td style="text-align:right;">{{ r.total_points }}</td>
-                <td style="text-align:right;" style="color: {% if r.bonus_percent >= 15 %}#27ae60{% elif r.bonus_percent > 0 %}#f39c12{% else %}#e74c3c{% endif %};">{{ r.bonus_percent }}%</td>
-                <td style="text-align:right;">{{ r.norm_kg }}</td>
-                <td style="text-align:right; color: {% if r.percent_complete >= 100 %}#27ae60{% elif r.percent_complete >= 80 %}#f39c12{% else %}#e74c3c{% endif %};">{{ r.percent_complete }}%</td>
-                <td>
-                    {% if r.source == "manual" %}
-                        <span style="background:#fff9e6; padding:3px 8px; border-radius:3px;">✏️ Вручную</span>
-                    {% else %}
-                        <span style="background:#e0e0e0; padding:3px 8px; border-radius:3px;">📷 Фото</span>
-                    {% endif %}
-                </td>
-                <td>{{ r.date }}</td>
-                <td style="text-align:center;">
-                    <a href="#" style="color:#3498db; text-decoration:none; margin-right:10px;">✏️</a>
-                    <a href="/delete/{{ loop.index0 }}" style="color:#e74c3c; text-decoration:none;" onclick="return confirm('Удалить запись?');">🗑️</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+        <!-- Таблица или сообщение об отсутствии записей -->
+        {% if has_records %}
+        <h2 style="text-align:center; margin:30px 0;">📋 Таблица записей</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ФИО</th>
+                        <th>Отдел</th>
+                        <th>Товар</th>
+                        <th>Категория</th>
+                        <th>Кол-во (шт)</th>
+                        <th>Калибр (кг)</th>
+                        <th>Общий вес (кг)</th>
+                        <th>Коэф. з/п</th>
+                        <th>З/п за смену</th>
+                        <th>З/п полная</th>
+                        <th>Урезано</th>
+                        <th>Баллы</th>
+                        <th>Бонус %</th>
+                        <th>Норма (кг)</th>
+                        <th>Выполнено %</th>
+                        <th>Источник</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in daily_prod %}
+                    <tr class="source-{{ r.source }}">
+                        <td><strong>{{ r.worker_id }}</strong></td>
+                        <td>{{ r.fio }}</td>
+                        <td>{{ r.otdel }}</td>
+                        <td>{{ r.product }}</td>
+                        <td>{{ r.category }}</td>
+                        <td>{{ r.quantity_pieces }}</td>
+                        <td>{{ r.caliber_kg }}</td>
+                        <td>{{ "%.1f" | format(r.quantity_kg) }}</td>
+                        <td>{{ r.salary_coeff }}×</td>
+                        <td class="salary-positive">{{ r.daily_salary | format_sum }}</td>
+                        <td class="salary-positive">{{ r.full_salary | format_sum }}</td>
+                        <td class="salary-negative">
+                            {% if r.reduced_amount > 0 %}
+                                -{{ r.reduced_amount | format_sum }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
+                        <td>{{ r.total_points }}</td>
+                        <td class="{% if r.bonus_percent >= 15 %}bonus-good{% elif r.bonus_percent > 0 %}bonus-warning{% else %}bonus-bad{% endif %}">
+                            {{ r.bonus_percent }}%
+                        </td>
+                        <td>{{ r.norm_kg }}</td>
+                        <td class="{% if r.percent_complete >= 100 %}bonus-good{% elif r.percent_complete >= 80 %}bonus-warning{% else %}bonus-bad{% endif %}">
+                            {{ r.percent_complete }}%
+                        </td>
+                        <td>
+                            {% if r.source == "manual" %}
+                                <span style="background:#fff9e6; padding:4px 8px; border-radius:4px; font-size:12px;">✏️ Вручную</span>
+                            {% else %}
+                                <span style="background:#e0e0e0; padding:4px 8px; border-radius:4px; font-size:12px;">📷 Фото</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.date }}</td>
+                        <td>
+                            <a href="#" class="action-btn edit-btn">✏️</a>
+                            <a href="/delete/{{ loop.index0 }}" class="action-btn delete-btn" onclick="return confirm('Удалить запись?');">🗑️</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <div class="empty-message">
-            📭 Нет записей{% if request.args.get('date') %} за выбранную дату{% endif %}
+        <div style="text-align:center; margin:60px 0; padding:30px; background:#fff3cd; border-radius:12px; border:1px solid #ffeeba; color:#856404; font-size:20px;">
+            {% if otdel_filter == "Все" %}
+                📭 За этот день ещё нет записей
+            {% else %}
+                📭 По отделу "{{ otdel_filter }}" ещё не было отчётов за этот день
+            {% endif %}
         </div>
         {% endif %}
 
