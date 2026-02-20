@@ -35,11 +35,14 @@
                 Нет работника с таким ID
             </div>
 
+            <label>Отдел</label>
+            <input type="text" id="otdel_display" readonly style="background:#f0f0f0; color:#333; width:100%; padding:12px; font-size:18px; margin-bottom:10px;">
+
             <label for="fio">ФИО работника</label>
             <select name="fio" id="fio" required>
                 <option value="">Выберите...</option>
                 {% for w in workers %}
-                    <option value="{{ w.fio }}" data-id="{{ w.id | string }}" data-category="{{ w.category }}">{{ w.fio }} ({{ w.category }})</option>
+                    <option value="{{ w.fio }}" data-id="{{ w.id | string }}" data-category="{{ w.category }}" data-otdel="{{ w.otdel }}">{{ w.fio }} ({{ w.category }})</option>
                 {% endfor %}
             </select>
 
@@ -115,6 +118,7 @@
 
         errorDiv.style.display = 'none';
         fioSelect.value = '';  // очищаем ФИО
+        document.getElementById('otdel_display').value = '';
 
         if (!id) return;
 
@@ -122,6 +126,7 @@
         for (let option of fioSelect.options) {
             if (option.dataset.id === id) {
                 fioSelect.value = option.value;
+                document.getElementById('otdel_display').value = option.dataset.otdel || '';
                 found = true;
                 break;
             }
@@ -153,6 +158,8 @@
     function updateSalary() {
         const select = document.getElementById('fio');
         const selectedOption = select.options[select.selectedIndex];
+        // Отображаем отдел
+        document.getElementById('otdel_display').value = selectedOption?.dataset?.otdel || '';
         const category = selectedOption.dataset.category || '';
         const rate = dailyRates[category] || 0;
         
