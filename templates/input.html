@@ -31,6 +31,9 @@
         <form method="post">
             <label for="worker_id">ID работника</label>
             <input type="number" name="worker_id" id="worker_id" min="1" placeholder="Введите ID">
+            <div id="id_error" style="color:#e74c3c; font-weight:bold; margin:10px 0; display:none;">
+                Нет работника с таким ID
+            </div>
 
             <label for="fio">ФИО работника</label>
             <select name="fio" id="fio" required>
@@ -106,16 +109,29 @@
 
     // Автозаполнение ФИО по ID и обновление з/п
     document.getElementById('worker_id').addEventListener('input', function() {
-        let id = this.value.trim();  // уже строка
+        const id = this.value.trim();
+        const errorDiv = document.getElementById('id_error');
+        const fioSelect = document.getElementById('fio');
+
+        errorDiv.style.display = 'none';
+        fioSelect.value = '';  // очищаем ФИО
+
         if (!id) return;
 
-        const select = document.getElementById('fio');
-        for (let option of select.options) {
-            if (option.dataset.id === id) {  // сравниваем строки
-                select.value = option.value;
-                updateSalary();
+        let found = false;
+        for (let option of fioSelect.options) {
+            if (option.dataset.id === id) {
+                fioSelect.value = option.value;
+                found = true;
                 break;
             }
+        }
+
+        if (!found) {
+            errorDiv.textContent = `Нет работника с ID ${id}`;
+            errorDiv.style.display = 'block';
+        } else {
+            updateSalary();
         }
     });
 
