@@ -206,13 +206,26 @@ def input_prod():
                     norm_kg = KG_NORMS.get(category, 0)
                     percent_complete = (quantity_kg / norm_kg * 100) if norm_kg > 0 else 0
 
-                    # Расчет бонуса по норме
-                    if percent_complete >= 100:
-                        bonus_percent = 20
+                    # Расчет коэффициента з/п и бонуса по норме
+                    if percent_complete >= 90:
+                        salary_coeff = 1.0
+                        if percent_complete >= 100:
+                            bonus_percent = 20
+                        elif percent_complete >= 80:
+                            bonus_percent = 10
+                        else:
+                            bonus_percent = 0
                     elif percent_complete >= 80:
-                        bonus_percent = 10
-                    else:
+                        salary_coeff = 0.9
                         bonus_percent = 0
+                    elif percent_complete >= 70:
+                        salary_coeff = 0.7
+                        bonus_percent = 0
+                    else:
+                        salary_coeff = 0.5
+                        bonus_percent = 0
+
+                    daily_salary = int(daily_rate * salary_coeff)
 
                     # Чек-лист дисциплины
                     checklist_points = {}
@@ -232,6 +245,7 @@ def input_prod():
                         "quantity_kg": round(quantity_kg, 1),
                         "category": category,
                         "daily_rate": daily_rate,
+                        "salary_coeff": salary_coeff,
                         "daily_salary": daily_salary,
                         "bonus_percent": bonus_percent,
                         "date": date,

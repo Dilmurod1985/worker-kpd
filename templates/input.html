@@ -156,8 +156,29 @@
         const category = selectedOption.dataset.category || '';
         const rate = dailyRates[category] || 0;
         
+        let salary = rate * 1.0;  // базовая ставка
+        let bonus = 0;
+
+        // Получить percent из norm_hint
+        const normHint = document.getElementById('norm_hint').textContent;
+        const percentMatch = normHint.match(/Выполнено: ([\d.]+)%/);
+        const percent = percentMatch ? parseFloat(percentMatch[1]) : 0;
+
+        if (percent >= 90) {
+            bonus = percent >= 100 ? 20 : (percent >= 80 ? 10 : 0);
+        } else if (percent >= 80) {
+            salary *= 0.9;
+            bonus = 0;
+        } else if (percent >= 70) {
+            salary *= 0.7;
+            bonus = 0;
+        } else {
+            salary *= 0.5;
+            bonus = 0;
+        }
+
         document.getElementById('salary_hint').textContent = 
-            'З/п за смену: ' + rate.toLocaleString('ru-RU') + ' сум | Бонус: 20%';
+            'З/п за смену: ' + Math.round(salary).toLocaleString('ru-RU') + ' сум | Бонус: ' + bonus + '%';
     }
 
     document.getElementById('quantity').addEventListener('input', updateCalc);
@@ -191,10 +212,7 @@
         document.getElementById('norm_hint').textContent = 
             'Норма: ' + norm + ' кг | Выполнено: ' + percent + '%';
 
-        let bonus = 0;
-        if (percent >= 100) bonus = 20;
-        else if (percent >= 80) bonus = 10;
-        document.getElementById('bonus_hint').textContent = 'Бонус по норме: ' + bonus + '%';
+        updateSalary();  // обновить з/п после изменения нормы
     }
 
     document.querySelectorAll('input[name^="checklist_"]').forEach(input => {
