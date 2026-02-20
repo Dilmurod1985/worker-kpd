@@ -351,7 +351,13 @@ def delete_record(index):
 
 @app.route("/tabel")
 def tabel():
+    otdel_filter = request.args.get("otdel", "Все")
     date_filter = request.args.get("date")
+    filtered_prod = DAILY_PROD
+
+    if otdel_filter != "Все":
+        filtered_prod = [r for r in DAILY_PROD if r.get("otdel") == otdel_filter]
+
     if date_filter:
         filtered_prod = [r for r in DAILY_PROD if r["date"] == date_filter]
     else:
@@ -377,7 +383,8 @@ def tabel():
                           total_salary=total_salary,
                           monthly_salary=monthly_salary,
                           total_salary_formatted=total_salary_formatted,
-                          monthly_salary_formatted=monthly_salary_formatted)
+                          monthly_salary_formatted=monthly_salary_formatted,
+                          otdel_filter=otdel_filter)
 
 
 @app.route("/export")

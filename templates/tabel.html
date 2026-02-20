@@ -231,11 +231,23 @@
     <div class="container">
         <h1>📊 Табель производства</h1>
 
-        <!-- Фильтр по дате -->
+        <!-- Фильтр по дате и отделу -->
         <div class="filter-section">
             <form method="get" style="display: inline;">
                 <label for="date">Показать за дату:</label>
                 <input type="date" name="date" id="date" value="{{ request.args.get('date', '') }}">
+                
+                <label for="otdel" style="margin-left: 20px;">Отдел:</label>
+                <select name="otdel" id="otdel">
+                    <option value="Все" {% if otdel_filter == "Все" %}selected{% endif %}>Все отделы</option>
+                    <option value="Сихлаш" {% if otdel_filter == "Сихлаш" %}selected{% endif %}>Сихлаш</option>
+                    <option value="Разделка" {% if otdel_filter == "Разделка" %}selected{% endif %}>Разделка</option>
+                    <option value="Қийма" {% if otdel_filter == "Қийма" %}selected{% endif %}>Қийма</option>
+                    <option value="Котлет" {% if otdel_filter == "Котлет" %}selected{% endif %}>Котлет</option>
+                    <option value="Филе" {% if otdel_filter == "Филе" %}selected{% endif %}>Филе</option>
+                    <option value="Техперсонал" {% if otdel_filter == "Техперсонал" %}selected{% endif %}>Техперсонал</option>
+                </select>
+                
                 <button type="submit">🔍 Фильтровать</button>
                 <a href="/tabel">↻ Показать все</a>
             </form>
