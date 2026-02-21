@@ -351,24 +351,37 @@ def delete_record(index):
 
 @app.route("/tabel")
 def tabel():
-    otdel_filter = request.args.get("otdel", "Все").strip()
-    date_filter = request.args.get("date")
-    filtered_prod = DAILY_PROD
-
-    # Фильтрация по отделу с нормализацией
+    otdel_filter = request.args.get("otdel", "Все")
+    fio_filter = request.args.get("fio", "Все").strip()
+    
+    print(f"DEBUG: otdel_filter = '{otdel_filter}', fio_filter = '{fio_filter}'")
+    
+    filtered_prod = DAILY_PROD.copy()
+    
+    # Фильтрация по отделу
     if otdel_filter != "Все":
-        otdel_filter_norm = otdel_filter.lower().replace(" ", "")
-        filtered_prod = [
-            r for r in DAILY_PROD 
-            if r.get("otdel", "").lower().replace(" ", "") == otdel_filter_norm
-        ]
-        print(f"Фильтр по отделу: '{otdel_filter}' (нормализовано: '{otdel_filter_norm}')")
-        print(f"Записей после фильтра: {len(filtered_prod)}")
-    else:
-        print(f"Фильтр по отделу: 'Все' (показываем все записи)")
-
-    if date_filter:
-        filtered_prod = [r for r in filtered_prod if r["date"] == date_filter]
+        filtered_prod = [r for r in filtered_prod if r.get("otdel") == otdel_filter]
+        print(f"DEBUG: После фильтрации по отделу '{otdel_filter}': {len(filtered_prod)} записей")
+    
+    # Фильтрация по ФИО или ID
+    if fio_filter != "Все" and fio_filter != "":
+        # Если ввели цифры - ищем по ID и подставляем ФИО
+        if fio_filter.isdigit():
+            worker_by_id = next((w for w in WORKERS_TABLE if str(w["id"]) == fio_filter), None)
+            if worker_by_id:
+                fio_filter = worker_by_id["fio"]
+                print(f"DEBUG: Найден работник по ID {fio_filter}: {fio_filter}")
+        
+        # Фильтруем по ФИО
+        filtered_prod = [r for r in filtered_prod if r.get("fio") == fio_filter]
+        print(f"DEBUG: После фильтрации по ФИО '{fio_filter}': {len(filtered_prod)} записей")
+    
+    # Проверка несоответствия работника отделу
+    warning_message = None
+    if fio_filter != "Все" and fio_filter != "" and otdel_filter != "Все":
+        selected_worker = next((w for w in WORKERS_TABLE if w["fio"] == fio_filter), None)
+        if selected_worker and selected_worker["otdel"] != otdel_filter:
+            warning_message = f'"{fio_filter}" — работник отдела "{selected_worker["otdel"]}", а не "{otdel_filter}"'
     
     # Рассчитываем итоги за день/фильтр
     total_records = len(filtered_prod)
@@ -382,6 +395,7 @@ def tabel():
     monthly_salary_formatted = "{:,}".format(int(monthly_salary)).replace(",", " ")
     
     has_records = len(filtered_prod) > 0
+    print(f"DEBUG: has_records = {has_records}")
     
     return render_template("tabel.html", 
                           workers=WORKERS_TABLE,
@@ -394,7 +408,9 @@ def tabel():
                           total_salary_formatted=total_salary_formatted,
                           monthly_salary_formatted=monthly_salary_formatted,
                           otdel_filter=otdel_filter,
-                          has_records=has_records)
+                          fio_filter=fio_filter,
+                          has_records=has_records,
+                          warning_message=warning_message)
 
 
 @app.route("/export")
