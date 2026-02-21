@@ -244,6 +244,7 @@
             margin: 0;
             border-radius: 12px;
             overflow: hidden;
+            table-layout: fixed;
         }
         
         th { 
@@ -256,10 +257,20 @@
             letter-spacing: 0.02em;
             text-transform: uppercase;
             border: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         th:nth-child(n+5) {
             text-align: right;
+        }
+        
+        th:last-child {
+            position: sticky;
+            right: 0;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            min-width: 120px;
         }
         
         td { 
@@ -285,6 +296,15 @@
         /* Выравнивание для числовых колонок */
         td:nth-child(n+5) {
             text-align: right;
+        }
+        
+        td:last-child {
+            position: sticky;
+            right: 0;
+            background: white;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+            min-width: 120px;
+            z-index: 5;
         }
         
         /* Зелёная з/п */
@@ -493,6 +513,18 @@
             font-weight: bold;
         }
         
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+            transform: translateY(-2px);
+        }
+        
         .empty-message {
             text-align: center;
             color: #999;
@@ -641,8 +673,7 @@
                             </td>
                             <td>{{ r.date }}</td>
                             <td>
-                                <a href="#" class="action-btn edit-btn">✏️</a>
-                                <a href="/delete/{{ loop.index0 }}" class="action-btn delete-btn" onclick="return confirm('Удалить запись?');">🗑️</a>
+                                <a href="/delete/{{ r.id }}" class="action-btn delete-btn" onclick="return confirm('Вы уверены, что хотите удалить запись?\n\nРаботник: {{ r.fio }}\nТовар: {{ r.product }}\nID: {{ r.id }}');">🗑️</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -677,41 +708,79 @@
                 📊 Скачать весь табель (Excel)
             </a>
             <a href="/monthly_report" class="btn-purple">
-                � Отчёт за месяц по категориям
+                📈 Отчёт за месяц по категориям
             </a>
         </div>
 
         <div class="back">
             <a href="/input">← Вернуться к вводу данных</a>
         </div>
-    </div>
-<script>
-        const fioInput = document.getElementById('fio_search');
 
-        function checkAndFill() {
-            const input = fioInput.value.trim();
+        <script>
+            const fioInput = document.getElementById('fio_search');
 
-            // Если ввели только цифры и длина >=1 — ищем по ID
-            if (/^\d+$/.test(input) && input.length >= 1) {
-                const datalist = document.getElementById('workers_list');
-                for (let option of datalist.options) {
-                    if (option.dataset.id === input) {
-                        fioInput.value = option.value.split(' (ID')[0];  // подставляем ФИО
-                        break;
+            function checkAndFill() {
+                const input = fioInput.value.trim();
+
+                // Если ввели только цифры и длина >=1 — ищем по ID
+                if (/^\d+$/.test(input) && input.length >= 1) {
+                    const datalist = document.getElementById('workers_list');
+                    for (let option of datalist.options) {
+                        if (option.dataset.id === input) {
+                            fioInput.value = option.value.split(' (ID')[0];  // подставляем ФИО
+                            break;
+                        }
                     }
                 }
             }
-        }
 
-        // Запускаем проверку только после завершения ввода
-        let timeout;
-        fioInput.addEventListener('input', function() {
-            clearTimeout(timeout);
-            timeout = setTimeout(checkAndFill, 500);  // ждём 0.5 секунды после последнего нажатия
-        });
+            // Функция для подтверждения удаления записи
+            function confirmDelete(recordId, fio, product) {
+                // Создаем модальное окно
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 10000; font-family: system-ui, -apple-system, sans-serif;';
 
-        fioInput.addEventListener('blur', checkAndFill);  // когда ушёл с поля
-        fioInput.addEventListener('change', checkAndFill);  // когда выбрал из списка
-    </script>
+                modal.innerHTML = `
+                    <div style="background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); max-width: 400px; text-align: center;">
+                        <h3 style="color: #dc2626; margin: 0 0 20px 0; font-size: 1.3em;">🗑️ Подтвердите удаление</h3>
+                        <p style="color: #374151; margin: 0 0 15px 0; line-height: 1.5;">
+                            Вы уверены, что хотите удалить запись:<br><br>
+                            <strong>${fio}</strong> — <strong>${product}</strong><br><br>
+                            ID записи: <strong>${recordId}</strong>
+                        </p>
+                        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 25px;">
+                            <button onclick="this.closest('div[style*=position]').remove(); window.location.href='/delete/${recordId}';" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">
+                                Да, удалить
+                            </button>
+                            <button onclick="this.closest('div[*=position]').remove();" style="background: #6b7280; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;" onmouseover="this.style.background='#525252'" onmouseout="this.style.background='#6b7280'">
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+
+                // Закрытие модального окна при клике на фон
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+
+                return false;
+            }
+
+            // Запускаем проверку только после завершения ввода
+            let timeout;
+            fioInput.addEventListener('input', function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(checkAndFill, 500);  // ждём 0.5 секунды после последнего нажатия
+            });
+
+            fioInput.addEventListener('blur', checkAndFill);  // когда ушёл с поля
+            fioInput.addEventListener('change', checkAndFill);  // когда выбрал из списка
+        </script>
+    </div>
 </body>
 </html>

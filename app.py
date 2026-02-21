@@ -347,6 +347,7 @@ def format_sum(value):
 def delete_record(index):
     """Удаляет запись по индексу"""
     import sqlite3
+    from database import DB_FILE
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute("DELETE FROM records WHERE id = ?", (index,))
