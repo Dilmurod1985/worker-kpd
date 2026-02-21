@@ -7,8 +7,12 @@ from openpyxl.styles import Font, Alignment
 import io
 from datetime import datetime
 from collections import defaultdict
+from database import init_db, add_record, get_all_records, get_records_by_date
 
 app = Flask(__name__)
+
+# Инициализация базы данных
+init_db()
 
 # Папка для временной загрузки фото
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -167,8 +171,6 @@ DAILY_RATES = {
     "стаж": 116667,
 }
 
-DAILY_PROD = []  # сюда сохраняются все записи производства
-
 # Калибры Go'sht в кг
 CALIBER_OPTIONS_KG = [5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 50, 60]
 
@@ -317,7 +319,7 @@ def input_prod():
                         "norm_kg": norm_kg,
                         "percent_complete": round(percent_complete, 1)
                     }
-                    DAILY_PROD.append(record)
+                    add_record(record)
                     success = f"Добавлено: {fio} — {quantity_pieces} шт × {selected_caliber_kg} кг = {quantity_kg} кг | З/П: {daily_salary:,} сум"
             except ValueError:
                 error = "Ошибка при расчете количества!"
@@ -344,8 +346,12 @@ def format_sum(value):
 @app.route("/delete/<int:index>")
 def delete_record(index):
     """Удаляет запись по индексу"""
-    if 0 <= index < len(DAILY_PROD):
-        del DAILY_PROD[index]
+    import sqlite3
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("DELETE FROM records WHERE id = ?", (index,))
+    conn.commit()
+    conn.close()
     return redirect("/tabel")
 
 
@@ -353,10 +359,17 @@ def delete_record(index):
 def tabel():
     otdel_filter = request.args.get("otdel", "Все")
     fio_filter = request.args.get("fio", "Все").strip()
+    date_filter = request.args.get("date", "")
     
-    print(f"DEBUG: otdel_filter = '{otdel_filter}', fio_filter = '{fio_filter}'")
+    print(f"DEBUG: otdel_filter = '{otdel_filter}', fio_filter = '{fio_filter}', date_filter = '{date_filter}'")
     
-    filtered_prod = DAILY_PROD.copy()
+    # Получаем записи из базы данных
+    if date_filter:
+        all_records = get_records_by_date(date_filter)
+    else:
+        all_records = get_all_records()
+    
+    filtered_prod = all_records.copy()
     
     # Фильтрация по отделу
     if otdel_filter != "Все":
@@ -389,7 +402,8 @@ def tabel():
     total_salary = sum(r.get("daily_salary", 0) for r in filtered_prod)
     
     # Итого за месяц (все даты)
-    monthly_salary = sum(r.get("daily_salary", 0) for r in DAILY_PROD)
+    all_records_for_month = get_all_records()
+    monthly_salary = sum(r.get("daily_salary", 0) for r in all_records_for_month)
     
     total_salary_formatted = "{:,}".format(int(total_salary)).replace(",", " ")
     monthly_salary_formatted = "{:,}".format(int(monthly_salary)).replace(",", " ")
@@ -418,10 +432,10 @@ def export_excel():
     date_filter = request.args.get("date")
 
     if date_filter:
-        filtered = [r for r in DAILY_PROD if r["date"] == date_filter]
+        filtered = get_records_by_date(date_filter)
         filename = f"tabell_{date_filter}.xlsx"
     else:
-        filtered = DAILY_PROD
+        filtered = get_all_records()
         filename = "tabell_vse.xlsx"
 
     wb = Workbook()
@@ -535,8 +549,9 @@ def monthly_report():
 
         # Фильтр записей за месяц
         year, mon = map(int, month.split("-"))
+        all_records = get_all_records()
         monthly_records = [
-            r for r in DAILY_PROD
+            r for r in all_records
             if r["date"].startswith(f"{year}-{mon:02d}")
         ]
 
