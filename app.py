@@ -21,6 +21,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Список товаров (твои реальные позиции)
 PRODUCTS = [
     "DONER 100 QYMA",
+    "DONER 50/70",
     "DONER 30/70",
     "DONER 50/50 BELORUS",
     "DONER 50/50 CITY",
@@ -28,55 +29,105 @@ PRODUCTS = [
     "DONER 50/50 YUMA",
     "DONER 60/40 YUMA",
     "DONER 70/30",
+    "DONER 70/30 YUMA",
     "DONER TOVUQ",
+    "OQTEPA LAVASH 50/50",
+    "DONER WENDY'S (60/50) DONA",
+    "DONER BURGER ХОЖИАҚБАР (10) 50/50",
+    "DONER BURGER ХОЖИАҚБАР (20) 50/50 D",
+    "DONER BURGER ХОЖИАҚБАР (30) 50/50",
+    "DONER BURGER ХОЖИАҚБАР (40) 50/50 D",
+    "DONER BURGER ХОЖИАҚБАР (5) 50/50",
+    "DONER MISSIONFOODS (20) 100 QYMA",
+    "DONER MISSIONFOODS (50) 100 QYMA D",
+    "DONER MISSIONFOODS (60) 100 DONA",
+    "DONER MISSIONFOODS (60) 50/50 DONA",
     "Сихлаш",
     "Фарш говяжий"
 ]
 
+# Группы товаров и их ассортимент
+PRODUCT_GROUPS = {
+    "ALLMAKON GROUP": [
+        "DONER 100 QYMA",
+        "DONER 50/70",
+        "DONER 30/70",
+        "DONER 50/50 BELORUS",
+        "DONER 50/50 CITY",
+        "DONER 50/50 SEVIMLI",
+        "DONER 50/50 YUMA",
+        "DONER 60/40 YUMA",
+        "DONER 70/30 YUMA"
+    ],
+    "OQTEPA LAVASH": [
+        "OQTEPA LAVASH 50/50",
+        "DONER 50/70",
+        "DONER 70/30",
+        "DONER TOVUQ"
+    ],
+    "WENDY'S": [
+        "DONER WENDY'S (60/50) DONA"
+    ],
+    "BURGER XOJIAKBAR": [
+        "DONER BURGER ХОЖИАҚБАР (10) 50/50",
+        "DONER BURGER ХОЖИАҚБАР (20) 50/50 D",
+        "DONER BURGER ХОЖИАҚБАР (30) 50/50",
+        "DONER BURGER ХОЖИАҚБАР (40) 50/50 D",
+        "DONER BURGER ХОЖИАҚБАР (5) 50/50"
+    ],
+    "MISSION FOODS": [
+        "DONER MISSIONFOODS (20) 100 QYMA",
+        "DONER MISSIONFOODS (50) 100 QYMA D",
+        "DONER MISSIONFOODS (60) 100 DONA",
+        "DONER MISSIONFOODS (60) 50/50 DONA"
+    ]
+}
+
+GROUPS_LIST = list(PRODUCT_GROUPS.keys())
+
 # Актуальный список работников с отделами
 WORKERS_TABLE = [
-    # Сихлаш
-    {"id": "1", "fio": "Alimov Murod", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "2", "fio": "Aliqulov Diyor", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    # Сихлаш (обновлено)
+    {"id": "57", "fio": "Alimov Murod", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "85", "fio": "Aliqulov Diyor", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
     {"id": "3", "fio": "Balqiboev Asadbek", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "4", "fio": "Balqiboev Temur", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "5", "fio": "Boboqulov Ma'rufjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "6", "fio": "Botiraliyev Iskandar", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "7", "fio": "Botirov Ulug'bek", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "8", "fio": "Hakimov Islom", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "9", "fio": "Ibragimov Ozodbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
-    {"id": "10", "fio": "Jonizaqov Xasanjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "11", "fio": "Jonizaqov Xusanjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "12", "fio": "Keldibekov Muxammadkodir", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "13", "fio": "Kuchkinov Abdulaziz", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "14", "fio": "Lapasov Javohir", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "15", "fio": "Maxkamov Jahongir", "otdel": "Сихлаш", "category": "стаж", "oklad": 3500000},
-    {"id": "16", "fio": "Miraliev Mirxasan", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "17", "fio": "Miraliev Mirxusan", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "18", "fio": "Muxammadiev Abbos", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "19", "fio": "Nazarov Abdukodir", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "20", "fio": "Nishonov Maxmudjon", "otdel": "Сихлаш", "category": "1 категория", "oklad": 6440000},
-    {"id": "21", "fio": "Normatov Avazbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
-    {"id": "22", "fio": "O'ktamov Sardor", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "23", "fio": "Olimxonov Nurmuhammad", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    {"id": "5", "fio": "Balqiboev Temur", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "76", "fio": "Boboqulov Ma'rufjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "77", "fio": "Botiraliyev Iskandar", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "86", "fio": "Botirov Ulug'bek", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "74", "fio": "Hakimov Islom", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "41", "fio": "Ibragimov Ozodbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
+    {"id": "67", "fio": "Jonizaqov Xasanjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "101", "fio": "Jonizaqov Xusanjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "64", "fio": "Keldibekov Muxammadkodir", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "46", "fio": "Kuchkinov Abdulaziz", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "84", "fio": "Lapasov Javohir", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "102", "fio": "Maxkamov Jahongir", "otdel": "Сихлаш", "category": "стаж", "oklad": 3500000},
+    {"id": "28", "fio": "Miraliev Mirxasan", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "14", "fio": "Miraliev Mirxusan", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "57", "fio": "Muxammadiev Abbos", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "52", "fio": "Nazarov Abdukodir", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "49", "fio": "Nishonov Maxmudjon", "otdel": "Сихлаш", "category": "1 категория", "oklad": 6440000},
+    {"id": "6", "fio": "Normatov Avazbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
+    {"id": "36", "fio": "O'ktamov Sardor", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "103", "fio": "Olimxonov Nurmuhammad", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
     {"id": "24", "fio": "Ortiqboev Ma'rufjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "25", "fio": "Qo'chqorov Sardor", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "26", "fio": "Qo'shbokov Inomjon", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
-    {"id": "27", "fio": "Raimberdiyev Dilshod", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
-    {"id": "28", "fio": "Rustamjonov Aziz", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "29", "fio": "Sattorov Ulug'bek", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
-    {"id": "30", "fio": "Shermatov Javlon", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
-    {"id": "31", "fio": "Tashmatov Raximjon", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
-    {"id": "32", "fio": "To'xtamurodov Izzatilla", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
-    {"id": "33", "fio": "Tugalov Sherzod", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
-    {"id": "34", "fio": "Vaxobjonov Avazbek", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
-    {"id": "35", "fio": "Xalilov Nodirbek", "otdel": "Сихлаш", "category": "1 категория", "oklad": 6440000},
-    {"id": "36", "fio": "Xapizov Ozodbek", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
-    {"id": "37", "fio": "Xayrullaev Jasurbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
-    {"id": "38", "fio": "Xoliqov Jumanazarbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
-    {"id": "39", "fio": "Maxmudova Muslima", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
-    {"id": "40", "fio": "Obidov Ziyodulla", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
-    {"id": "41", "fio": "Turg'unboyev Asadbek", "otdel": "Сихлаш", "category": "стаж", "oklad": 3500000},
+    {"id": "2", "fio": "Qo'chqorov Sardor", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "10", "fio": "Qo'shbokov Inomjon", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
+    {"id": "30", "fio": "Raimberdiyev Dilshod", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    {"id": "104", "fio": "Rustamjonov Aziz", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "58", "fio": "Sattorov Ulug'bek", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    {"id": "35", "fio": "Shermatov Javlon", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
+    {"id": "73", "fio": "Tashmatov Raximjon", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    {"id": "26", "fio": "To'xtamurodov Izzatilla", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
+    {"id": "51", "fio": "Tugalov Sherzod", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
+    {"id": "105", "fio": "Vaxobjonov Avazbek", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    {"id": "1", "fio": "Xalilov Nodirbek", "otdel": "Сихлаш", "category": "1 категория", "oklad": 6440000},
+    {"id": "27", "fio": "Xapizov Ozodbek", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    {"id": "39", "fio": "Xayrullaev Jasurbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
+    {"id": "4", "fio": "Xoliqov Jumanazarbek", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
+    {"id": "61", "fio": "Obidov Ziyodulla", "otdel": "Сихлаш", "category": "3 категория", "oklad": 4900000},
+    {"id": "75", "fio": "Turg'unboyev Asadbek", "otdel": "Сихлаш", "category": "стаж", "oklad": 3500000},
 
     # Разделка
     {"id": "42", "fio": "Abdullayev Sherzod", "otdel": "Разделка", "category": "5 категория", "oklad": 3640000},
@@ -287,14 +338,8 @@ def input_prod():
                     reduced_amount = full_salary - daily_salary  # сколько урезано
 
                     # Чек-лист дисциплины
-                    checklist_points = {}
-                    total_points = 0
-                    for i, cat in enumerate(CHECKLIST_CATEGORIES, 1):
-                        key = f"checklist_{i}"
-                        points = int(request.form.get(key, 0))
-                        checklist_points[cat["name"]] = points
-                        total_points += points
-
+                    discipline_total = int(request.form.get('discipline_total', 0))
+                    
                     # Отдел работника
                     otdel = worker.get("otdel", "")
                     record = {
@@ -314,8 +359,7 @@ def input_prod():
                         "otdel": otdel,
                         "date": date,
                         "source": "manual",
-                        "checklist_points": checklist_points,
-                        "total_points": total_points,
+                        "discipline_total": discipline_total,
                         "norm_kg": norm_kg,
                         "percent_complete": round(percent_complete, 1)
                     }
@@ -325,13 +369,13 @@ def input_prod():
                 error = "Ошибка при расчете количества!"
 
     return render_template("input.html", 
-                          products=PRODUCTS, 
+                          groups=GROUPS_LIST,
+                          products_by_group=PRODUCT_GROUPS,
                           workers=WORKERS_TABLE,
                           caliber_options=CALIBER_OPTIONS_KG,
                           daily_rates=DAILY_RATES,
                           success=success, 
                           error=error,
-                          checklist=CHECKLIST_CATEGORIES,
                           kg_norms=KG_NORMS)
 
 

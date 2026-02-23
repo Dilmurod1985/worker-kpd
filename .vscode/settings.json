@@ -1,0 +1,23 @@
+{
+  "css.validate": false,
+  "css.lint.enable": false,
+  "html.validate": false,
+  "html.validate.scripts": false,
+  "html.customData": [],
+  "javascript.validate.enable": false,
+  "[html]": {
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "never"
+    },
+    "editor.quickSuggestions": {
+      "strings": false
+    }
+  },
+  "files.associations": {
+    "*.html": "html"
+  },
+  "emmet.includeLanguages": {
+    "jinja-html": "html"
+  }
+}

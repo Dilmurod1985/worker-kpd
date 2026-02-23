@@ -7,7 +7,7 @@
         body { font-family: Arial; background: #e0f7fa; margin: 0; padding: 20px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #00695c; }
-        label { display: block; margin: 15px 0 5px; font-weight: bold; color: #004d40; }
+        label { font-weight: 600; color: #1f2937; margin-bottom: 6px; display: block; }
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #b2dfdb; border-radius: 6px; box-sizing: border-box; }
         button { background: #009688; color: white; padding: 14px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1.1em; }
         button:hover { background: #00796b; }
@@ -15,6 +15,13 @@
         .error { background: #ffcdd2; color: #b71c1c; padding: 15px; margin: 15px 0; border-radius: 6px; text-align: center; }
         .back { text-align: center; margin-top: 20px; }
         .back a { color: #00695c; text-decoration: none; font-weight: bold; }
+        .form-group { margin-bottom: 24px; }
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            label { font-size: 16px; }
+            input, select { padding: 10px; }
+            button { padding: 12px; font-size: 1em; }
+        }
     </style>
 </head>
 <body>
@@ -46,13 +53,22 @@
                 {% endfor %}
             </select>
 
-            <label>Товар</label>
-            <select name="product" required>
-                <option value="">Выберите...</option>
-                {% for p in products %}
-                    <option value="{{ p }}">{{ p }}</option>
-                {% endfor %}
-            </select>
+            <div class="form-group">
+                <label for="group_select">Группа товара:</label>
+                <select id="group_select" name="group" onchange="updateProducts()" required>
+                    <option value="">Выберите группу...</option>
+                    {% for group in groups %}
+                        <option value="{{ group }}">{{ group }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="product_select">Ассортимент:</label>
+                <select id="product_select" name="product" required>
+                    <option value="">Сначала выберите группу</option>
+                </select>
+            </div>
 
             <label for="quantity">Количество штук</label>
             <input type="number" name="quantity" id="quantity" min="0" required>
@@ -65,14 +81,14 @@
                 {% endfor %}
             </select>
 
-            <div style="margin-top:20px;">
-                <label>Чек-лист дисциплины (баллы за смену)</label>
-                {% for cat in checklist %}
-                    <div style="margin:10px 0;">
-                        <label>{{ cat.name }} (0–{{ cat.max_points }})</label>
-                        <input type="number" name="checklist_{{ loop.index }}" min="0" max="{{ cat.max_points }}" value="0" style="width:80px;">
-                    </div>
-                {% endfor %}
+            <div class="form-group" style="margin-bottom: 32px;">
+                <label for="discipline_total">Чек-лист дисциплины (баллы за смену):</label>
+                <select id="discipline_total" name="discipline_total" required style="font-size:20px; padding:16px; width:100%; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc;">
+                    {% for i in range(101) %}
+                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }} баллов</option>
+                    {% endfor %}
+                </select>
+                <small style="color:#666; font-size:14px; display:block; margin-top:8px;">Выберите общее количество баллов за всю смену (0–100)</small>
             </div>
 
             <small id="bonus_hint" style="display:block; margin-top:10px; color:#f39c12; font-weight:bold;">
@@ -199,14 +215,11 @@
 
     // Чек-лист бонуса
     function updateBonus() {
-        let total = 0;
-        document.querySelectorAll('input[name^="checklist_"]').forEach(input => {
-            total += parseInt(input.value) || 0;
-        });
+        const disciplineTotal = parseInt(document.getElementById('discipline_total').value) || 0;
         let percent = 0;
-        if (total >= 90) percent = 100;
-        else if (total >= 75) percent = 75;
-        else if (total >= 60) percent = 50;
+        if (disciplineTotal >= 90) percent = 100;
+        else if (disciplineTotal >= 75) percent = 75;
+        else if (disciplineTotal >= 60) percent = 50;
         document.getElementById('bonus_hint').textContent = 'Итоговый бонус: ' + percent + '%';
     }
 
@@ -222,11 +235,32 @@
         updateSalary();  // обновить з/п после изменения нормы
     }
 
-    document.querySelectorAll('input[name^="checklist_"]').forEach(input => {
-        input.addEventListener('input', updateBonus);
-    });
+    // Привязываем события
+    document.getElementById('discipline_total').addEventListener('change', updateBonus);
     updateBonus(); // при загрузке
     updateNorm(); // при загрузке
-</script>
+
+    // Функция обновления продуктов на основе выбранной группы
+    const productsByGroup = {{ products_by_group | tojson }};
+
+    function updateProducts() {
+        const group = document.getElementById('group_select').value;
+        const productSelect = document.getElementById('product_select');
+
+        productSelect.innerHTML = '<option value="">Выберите ассортимент...</option>';
+
+        if (group && productsByGroup[group]) {
+            productsByGroup[group].forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                productSelect.appendChild(option);
+            });
+        }
+    }
+
+    // Привязываем событие
+    document.getElementById('group_select').addEventListener('change', updateProducts);
+    </script>
 </body>
 </html>

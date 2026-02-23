@@ -24,8 +24,16 @@ def init_db():
         percent_complete REAL,
         total_points INTEGER,
         bonus_percent INTEGER,
+        discipline_total INTEGER DEFAULT 0,
         source TEXT DEFAULT 'Вручную'
     )''')
+    
+    # Добавляем колонку discipline_total если таблица уже существует
+    try:
+        c.execute("ALTER TABLE records ADD COLUMN discipline_total INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # Колонка уже существует
+    
     conn.commit()
     conn.close()
 
@@ -36,7 +44,7 @@ def add_record(record):
         date, worker_id, fio, otdel, product, category,
         quantity_pieces, caliber_kg, quantity_kg,
         salary_coeff, daily_salary, full_salary, reduced_amount,
-        percent_complete, total_points, bonus_percent, source
+        percent_complete, total_points, bonus_percent, discipline_total, source
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
     (record['date'], record['worker_id'], record['fio'], record['otdel'],
      record['product'], record['category'],
@@ -44,7 +52,7 @@ def add_record(record):
      record.get('salary_coeff', 1.0), record['daily_salary'], record['full_salary'],
      record.get('reduced_amount', 0),
      record.get('percent_complete', 0), record.get('total_points', 0),
-     record.get('bonus_percent', 0), record.get('source', 'Вручную')))
+     record.get('bonus_percent', 0), record.get('discipline_total', 0), record.get('source', 'Вручную')))
     conn.commit()
     conn.close()
 
