@@ -400,6 +400,28 @@ def delete_record(index):
     return redirect("/tabel")
 
 
+@app.route('/update_date/<int:record_id>', methods=['POST'])
+def update_date(record_id):
+    """Обновляет дату записи"""
+    import sqlite3
+    from database import DB_FILE
+    from flask import request, jsonify
+    
+    data = request.get_json()
+    new_date = data.get('date')
+    
+    if not new_date:
+        return jsonify({'error': 'Дата не указана'}), 400
+    
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE records SET date = ? WHERE id = ?", (new_date, record_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+
 @app.route("/tabel")
 def tabel():
     otdel_filter = request.args.get("otdel", "Все")

@@ -673,6 +673,7 @@
                             </td>
                             <td>{{ r.date }}</td>
                             <td>
+                                <a href="#" onclick="editDate({{ r.id }})" title="Изменить дату" style="color:#3b82f6; margin-right:10px; text-decoration:none; cursor:pointer; opacity:0.8;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">📅</a>
                                 <a href="/delete/{{ r.id }}" class="action-btn delete-btn" onclick="return confirm('Вы уверены, что хотите удалить запись?\n\nРаботник: {{ r.fio }}\nТовар: {{ r.product }}\nID: {{ r.id }}');">🗑️</a>
                             </td>
                         </tr>
@@ -780,6 +781,27 @@
 
             fioInput.addEventListener('blur', checkAndFill);  // когда ушёл с поля
             fioInput.addEventListener('change', checkAndFill);  // когда выбрал из списка
+
+            // Функция для изменения даты записи
+            function editDate(recordId) {
+                const currentDate = prompt("Введите новую дату (формат ГГГГ-ММ-ДД)", "2026-02-23");
+                if (currentDate && confirm("Изменить дату записи #" + recordId + " на " + currentDate + "?")) {
+                    fetch('/update_date/' + recordId, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ date: currentDate })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            alert("Дата обновлена!");
+                            location.reload();
+                        } else {
+                            alert("Ошибка обновления даты");
+                        }
+                    })
+                    .catch(error => alert("Ошибка: " + error));
+                }
+            }
         </script>
     </div>
 </body>
