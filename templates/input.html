@@ -424,13 +424,6 @@
             });
             totalDisplay.textContent = sum;
             totalInput.value = sum;
-
-    function updateProduct(num) {
-        console.log('updateProduct called with num:', num);
-        const groupSelect = document.querySelector(`select[name="group${num}"]`);
-        const productSelect = document.querySelector(`select[name="product${num}"]`);
-        const selectedGroup = groupSelect.value;
-        
         console.log('selectedGroup:', selectedGroup);
 
         productSelect.innerHTML = '<option value="">Выберите ассортимент...</option>';
