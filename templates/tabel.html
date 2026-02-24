@@ -299,16 +299,15 @@
                             <td style="padding:10px; text-align:center;">{{ r.worker_id }}</td>
                             <td style="padding:10px; text-align:left; font-weight:500;">{{ r.fio }}</td>
                             <td style="padding:10px; text-align:center;">{{ r.otdel }}</td>
-                            <td style="padding:10px; white-space:pre-wrap; line-height:1.4;">
+                            <td style="padding:12px; white-space:pre-wrap; line-height:1.5; max-width:320px;">
                                 {% if r.products_list and r.products_list | length > 1 %}
-                                    <details style="cursor:pointer; margin: 0;">
-                                        <summary style="color:#2563eb; font-weight:600; list-style:none; display:flex; align-items:center; gap:4px; font-size:14px;">
-                                            <span style="font-size:14px;">▼</span>
-                                            {{ r.products_list | length }}
+                                    <details style="cursor:pointer; margin:0;">
+                                        <summary style="list-style:none; display:flex; align-items:center; gap:6px; font-weight:600; color:#1e40af;">
+                                            {{ r.products_list | length }} вида ▼
                                         </summary>
-                                        <div style="margin-top:4px; color:#374151; font-size:13px;">
+                                        <div style="margin-top:6px; padding:8px; background:#f8fafc; border-radius:6px; font-size:13px;">
                                             {% for item in r.products_list %}
-                                                <div style="margin-bottom:2px;">{{ item.strip() }}</div>
+                                                <div style="margin-bottom:4px;">{{ item.strip() }}</div>
                                             {% endfor %}
                                         </div>
                                     </details>

@@ -90,6 +90,7 @@ WORKERS_TABLE = [
     # Сихлаш (обновлено)
     {"id": "57", "fio": "Alimov Murod", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
     {"id": "85", "fio": "Aliqulov Diyor", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
+    {"id": "07", "fio": "Tashmatov Raximjon", "otdel": "Сихлаш", "category": "5 категория", "oklad": 3640000},
     {"id": "3", "fio": "Balqiboev Asadbek", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
     {"id": "5", "fio": "Balqiboev Temur", "otdel": "Сихлаш", "category": "2 категория", "oklad": 6160000},
     {"id": "76", "fio": "Boboqulov Ma'rufjon", "otdel": "Сихлаш", "category": "4 категория", "oklad": 4200000},
