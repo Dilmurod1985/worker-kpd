@@ -179,6 +179,22 @@
             padding: 40px;
             font-size: 1.1em;
         }
+        
+        /* Красивый скроллбар для таблицы */
+        div[style*="overflow-x:auto"]::-webkit-scrollbar {
+            height: 12px;
+        }
+        div[style*="overflow-x:auto"]::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+        div[style*="overflow-x:auto"]::-webkit-scrollbar-thumb {
+            background: #60a5fa;
+            border-radius: 6px;
+        }
+        div[style*="overflow-x:auto"]::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
     </style>
 </head>
 <body>
@@ -255,26 +271,27 @@
 
             <!-- Таблица -->
     {% if has_records %}
-    <div style="overflow-x:auto;">
-        <table style="width:100%; border-collapse:collapse; font-size:14px; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
-            <thead>
-                <tr style="background:#1e40af; color:white;">
-                    <th style="padding:14px; text-align:center;">ID</th>
-                    <th style="padding:14px; text-align:left;">ФИО</th>
-                    <th style="padding:14px; text-align:center;">Отдел</th>
-                    <th style="padding:14px; text-align:center;">ТОВАР</th>
-                    <th style="padding:14px; text-align:center;">Кол-во (шт)</th>
-                    <th style="padding:14px; text-align:center;">Калибр (кг)</th>
-                    <th style="padding:14px; text-align:center;">Общий вес (кг)</th>
-                    <th style="padding:14px; text-align:center;">Коэф.</th>
-                    <th style="padding:14px; text-align:center;">З/П за смену</th>
-                    <th style="padding:14px; text-align:center;">Урезано</th>
-                    <th style="padding:14px; text-align:center;">Бонус %</th>
-                    <th style="padding:14px; text-align:center;">Норма (кг)</th>
-                    <th style="padding:14px; text-align:center;">Выполнено %</th>
-                    <th style="padding:14px; text-align:center;">Дата</th>
-                    <th style="padding:14px; text-align:center;">Действия</th>
-                </tr>
+    <div style="position:relative; overflow:hidden; margin:24px 0;">
+        <div style="overflow-x:auto; max-height:70vh; scrollbar-width:thin; scrollbar-color:#60a5fa #e0f2fe;">
+            <table style="width:max-content; min-width:100%; border-collapse:collapse; font-size:14px; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                <thead>
+                    <tr style="background:#1e40af; color:white;">
+                        <th style="padding:14px; text-align:center;">ID</th>
+                        <th style="padding:14px; text-align:left;">ФИО</th>
+                        <th style="padding:14px; text-align:center;">Отдел</th>
+                        <th style="padding:14px; text-align:center;">ТОВАР</th>
+                        <th style="padding:14px; text-align:center;">Кол-во (шт)</th>
+                        <th style="padding:14px; text-align:center;">Калибр (кг)</th>
+                        <th style="padding:14px; text-align:center;">Общий вес (кг)</th>
+                        <th style="padding:14px; text-align:center;">Коэф.</th>
+                        <th style="padding:14px; text-align:center;">З/П за смену</th>
+                        <th style="padding:14px; text-align:center;">Урезано</th>
+                        <th style="padding:14px; text-align:center;">Бонус %</th>
+                        <th style="padding:14px; text-align:center;">Норма (кг)</th>
+                        <th style="padding:14px; text-align:center;">Выполнено %</th>
+                        <th style="padding:14px; text-align:center;">Дата</th>
+                        <th style="padding:14px; text-align:center;">Действия</th>
+                    </tr>
                     </thead>
                     <tbody>
                         {% for r in daily_prod %}
@@ -317,6 +334,14 @@
                         {% endfor %}
                     </tbody>
                 </table>
+        </div>
+        
+        <!-- Плавающая полоса прокрутки внизу -->
+        <div style="position:sticky; bottom:0; left:0; right:0; height:20px; background:#e0f2fe; border-top:1px solid #60a5fa; z-index:10; pointer-events:none;">
+            <div style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); color:#1e40af; font-size:12px; padding:4px;">
+                → Скролл влево/вправо для полной таблицы
+            </div>
+        </div>
     </div>
     {% else %}
     <div style="text-align:center; margin:60px 0; padding:30px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:12px; color:#721c24; font-size:20px;">
