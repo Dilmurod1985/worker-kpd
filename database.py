@@ -40,19 +40,39 @@ def init_db():
 def add_record(record):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
+    
+    values_tuple = (
+        record['date'],
+        record['worker_id'],
+        record['fio'],
+        record['otdel'],
+        record['product'],
+        record['category'],
+        record.get('quantity_pieces', 0),
+        record.get('caliber_kg', 0),
+        record['quantity_kg'],
+        record.get('salary_coeff', 1.0),
+        record['daily_salary'],
+        record['full_salary'],
+        record.get('reduced_amount', 0),
+        record.get('percent_complete', 0),
+        record.get('total_points', 0),
+        record.get('bonus_percent', 0),
+        record.get('source', 'Вручную'),
+        record.get('discipline_total', 0)  # ← ЭТОТ 18-Й ЭЛЕМЕНТ ОБЯЗАТЕЛЬНО ДОЛЖЕН БЫТЬ ПОСЛЕДНИМ
+    )
+    
+    print("DEBUG: длина кортежа значений:", len(values_tuple))
+    print("DEBUG: discipline_total пришёл:", record.get('discipline_total', 'НЕТ КЛЮЧА'))
+    
     c.execute('''INSERT INTO records (
         date, worker_id, fio, otdel, product, category,
         quantity_pieces, caliber_kg, quantity_kg,
         salary_coeff, daily_salary, full_salary, reduced_amount,
-        percent_complete, total_points, bonus_percent, discipline_total, source
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-    (record['date'], record['worker_id'], record['fio'], record['otdel'],
-     record['product'], record['category'],
-     record.get('quantity_pieces', 0), record.get('caliber_kg', 0), record['quantity_kg'],
-     record.get('salary_coeff', 1.0), record['daily_salary'], record['full_salary'],
-     record.get('reduced_amount', 0),
-     record.get('percent_complete', 0), record.get('total_points', 0),
-     record.get('bonus_percent', 0), record.get('discipline_total', 0), record.get('source', 'Вручную')))
+        percent_complete, total_points, bonus_percent,
+        source, discipline_total
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', values_tuple)
+    
     conn.commit()
     conn.close()
 

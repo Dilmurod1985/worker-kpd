@@ -3,425 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Табель работников</title>
+    <title>📊 Табель производства</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
-            color: #1e293b;
-            line-height: 1.6;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
             margin: 0;
-            padding: 0;
+            padding: 20px;
         }
         
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
         }
         
         h1 {
             text-align: center;
-            color: #0f172a;
-            margin: 30px 0 40px 0;
-            font-size: 2.5em;
+            color: #1f2937;
+            margin-bottom: 30px;
+            font-size: 2.2em;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            letter-spacing: -0.02em;
         }
         
-        /* Акварельный стиль для блока фильтров */
         .filters-wrapper {
-            position: relative;
-            margin: 30px 0;
-            padding: 40px;
-            border-radius: 20px;
-            overflow: hidden;
-            background: linear-gradient(135deg, 
-                rgba(220, 252, 231, 0.3) 0%,    /* мятный */
-                rgba(219, 234, 254, 0.4) 50%,   /* светло-голубой */
-                rgba(167, 243, 208, 0.3) 100%   /* бирюзовый */
-            );
-            backdrop-filter: blur(10px);
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
-
-        /* Акварельные волны на фоне */
-        .filters-wrapper::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -20%;
-            width: 140%;
-            height: 200%;
-            background: radial-gradient(ellipse at 20% 30%, 
-                rgba(34, 197, 94, 0.08) 0%, 
-                transparent 50%),
-                radial-gradient(ellipse at 80% 70%, 
-                rgba(59, 130, 246, 0.06) 0%, 
-                transparent 50%),
-                radial-gradient(ellipse at 40% 80%, 
-                rgba(16, 185, 129, 0.05) 0%, 
-                transparent 40%);
-            border-radius: 50%;
-            animation: wave 20s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        /* Мерцающие частицы */
-        .filters-wrapper::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
-                radial-gradient(circle at 85% 45%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
-                radial-gradient(circle at 45% 65%, rgba(255, 255, 255, 0.25) 1px, transparent 1px),
-                radial-gradient(circle at 75% 15%, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-                radial-gradient(circle at 25% 85%, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
-            background-size: 200px 200px;
-            animation: float 15s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes wave {
-            0%, 100% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.1); }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) translateX(0px); }
-            25% { transform: translateY(-10px) translateX(5px); }
-            50% { transform: translateY(5px) translateX(-5px); }
-            75% { transform: translateY(-5px) translateX(10px); }
-        }
-
+        
         .filters {
             display: flex;
+            gap: 20px;
+            align-items: center;
             flex-wrap: wrap;
-            gap: 16px;
-            align-items: flex-end;
-            position: relative;
-            z-index: 1;
+            justify-content: center;
         }
-
+        
         .filter-group {
-            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+        
+        .filter-group input, .filter-group select {
+            padding: 12px 16px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
             min-width: 200px;
         }
-
-        .filter-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #374151;
-            font-weight: 500;
-            font-size: 14px;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-
-        .filter-group input,
-        .filter-group select {
-            width: 100%;
-            padding: 14px 16px;
-            border: none;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            font-size: 15px;
-            font-family: system-ui, -apple-system, sans-serif;
-            color: #1f2937;
-            transition: all 0.3s ease;
-        }
-
-        .filter-group input:focus,
-        .filter-group select:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-            transform: translateY(-2px);
-        }
-
-        .filter-group input::placeholder {
-            color: #9ca3af;
-        }
-
-        .filters button {
-            padding: 14px 28px;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #0d9488 0%, #10b981 100%);
-            color: white;
-            font-weight: 600;
-            font-size: 15px;
-            font-family: system-ui, -apple-system, sans-serif;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            align-self: flex-end;
-        }
-
-        .filters button:hover {
-            background: linear-gradient(135deg, #0f766e 0%, #059669 100%);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .filters a {
-            padding: 14px 28px;
-            border-radius: 12px;
-            background: rgba(107, 114, 128, 0.1);
-            color: #374151;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 15px;
-            font-family: system-ui, -apple-system, sans-serif;
-            backdrop-filter: blur(8px);
-            transition: all 0.3s ease;
-            align-self: flex-end;
-            text-align: center;
-        }
-
-        .filters a:hover {
-            background: rgba(107, 114, 128, 0.2);
-            color: #1f2937;
-            transform: translateY(-1px);
-        }
-
-        /* Мобильная адаптация */
-        @media (max-width: 768px) {
-            .filters-wrapper {
-                padding: 25px 20px;
-                margin: 20px 0;
-            }
-
-            .filters {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .filter-group {
-                min-width: 100%;
-            }
-
-            .filters button,
-            .filters a {
-                width: 100%;
-                text-align: center;
-            }
-        }
-
-        h2 { 
-            color: #0f172a; 
-            margin: 40px 0 25px 0;
-            font-size: 1.8em;
-            font-weight: 600;
-            text-align: center;
-            letter-spacing: -0.01em;
-        }
         
-        .table-container {
-            background: white;
-            border-radius: 16px;
-            padding: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            margin: 30px 0;
-            overflow: hidden;
-        }
-        
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin: 0;
-            border-radius: 12px;
-            overflow: hidden;
-            table-layout: fixed;
-        }
-        
-        th { 
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
-            color: white; 
-            padding: 16px 12px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            border: none;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        
-        th:nth-child(n+5) {
-            text-align: right;
-        }
-        
-        th:last-child {
-            position: sticky;
-            right: 0;
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            min-width: 120px;
-        }
-        
-        td { 
-            padding: 14px 12px;
-            vertical-align: middle;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 14px;
-        }
-        
-        tr:last-child td {
-            border-bottom: none;
-        }
-        
-        tr:nth-child(even) {
-            background: #fafbfc;
-        }
-        
-        tr:hover {
-            background: #f8fafc;
-            transition: background 0.2s ease;
-        }
-        
-        /* Выравнивание для числовых колонок */
-        td:nth-child(n+5) {
-            text-align: right;
-        }
-        
-        td:last-child {
-            position: sticky;
-            right: 0;
-            background: white;
-            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-            min-width: 120px;
-            z-index: 5;
-        }
-        
-        /* Зелёная з/п */
-        .salary-positive {
-            color: #27ae60;
-            font-weight: bold;
-        }
-        
-        .salary-negative {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        
-        .coeff-low {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        
-        .percent-good {
-            color: #27ae60;
-            font-weight: bold;
-        }
-        
-        .percent-warning {
-            color: #f39c12;
-            font-weight: bold;
-        }
-        
-        .percent-bad {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        
-        .source-manual {
-            background: #fff9e6;
-        }
-        
-        .source-upload {
-            background: #f0f0f0;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 25px 0;
-        }
-        .stat-box {
-            background: #e0f2f1;
-            border-left: 4px solid #009688;
-            padding: 15px;
-            border-radius: 6px;
-            text-align: center;
-        }
-        .stat-box .label {
-            color: #00695c;
-            font-size: 0.9em;
-            font-weight: bold;
-        }
-        .stat-box .value {
-            color: #00695c;
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-        
-        .stats-top {
-            display: flex;
-            justify-content: space-around;
-            margin: 40px 0;
-            gap: 20px;
-        }
-        .stat-card {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            text-align: center;
-            flex: 1;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-        
-        .stat-card strong {
-            color: #374151;
-            font-size: 0.95em;
-            font-weight: 600;
-            display: block;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .stat-card .big-number {
-            font-size: 2.2em;
-            color: #0f172a;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-        
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin: 40px 0;
-            flex-wrap: wrap;
-        }
-        
-        .action-buttons a {
-            padding: 14px 32px;
-            border-radius: 12px;
-            text-decoration: none;
+        .filters button, .filters a {
+            padding: 12px 24px;
+            border-radius: 8px;
             font-weight: 600;
             font-size: 15px;
             font-family: system-ui, -apple-system, sans-serif;
@@ -535,43 +183,6 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Табель производства</h1>
-
-        <!-- Фильтры в акварельном стиле -->
-        <div class="filters-wrapper">
-            <form class="filters" method="get">
-                <div class="filter-group">
-                    <label for="date">Показать за дату:</label>
-                    <input type="date" name="date" id="date" value="{{ request.args.get('date', '') }}">
-                </div>
-                
-                <div class="filter-group">
-                    <label for="otdel">Показать отдел:</label>
-                    <select name="otdel" id="otdel">
-                        <option value="Все" {% if otdel_filter == "Все" %}selected{% endif %}>Все отделы</option>
-                        <option value="Сихлаш" {% if otdel_filter == "Сихлаш" %}selected{% endif %}>Сихлаш</option>
-                        <option value="Разделка" {% if otdel_filter == "Разделка" %}selected{% endif %}>Разделка</option>
-                        <option value="Қийма" {% if otdel_filter == "Қийма" %}selected{% endif %}>Қийма</option>
-                        <option value="Котлет" {% if otdel_filter == "Котлет" %}selected{% endif %}>Котлет</option>
-                        <option value="Филе" {% if otdel_filter == "Филе" %}selected{% endif %}>Филе</option>
-                        <option value="Техперсонал" {% if otdel_filter == "Техперсонал" %}selected{% endif %}>Техперсонал</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="fio">Показать работника (ФИО или ID):</label>
-                    <input type="text" name="fio" id="fio_search" placeholder="Введите ФИО или ID..." list="workers_list" value="{{ fio_filter if fio_filter != 'Все' else '' }}">
-                    <datalist id="workers_list">
-                        {% for worker in workers %}
-                            <option value="{{ worker.fio }}" data-id="{{ worker.id }}">{{ worker.fio }} (ID {{ worker.id }})</option>
-                        {% endfor %}
-                    </datalist>
-                </div>
-
-                <button type="submit">Фильтровать</button>
-                <a href="/tabel">Показать все</a>
-            </form>
-        </div>
 
         {% if warning_message %}
         <div style="text-align:center; margin:20px 0; padding:15px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; color:#856404; font-size:18px;">
@@ -579,143 +190,155 @@
         </div>
         {% endif %}
 
-        {% if daily_prod %}
-        <div class="stats-top">
-            <div class="stat-card">
-                <strong>📊 Всего записей</strong>
-                <div class="big-number">{{ total_records }}</div>
-            </div>
-            <div class="stat-card">
-                <strong>⚖️ Общий вес (кг)</strong>
-                <div class="big-number">{{ total_kg | round(1) }}</div>
-            </div>
-            <div class="stat-card">
-                <strong>💰 Общая з/п (сум)</strong>
-                <div class="big-number">{{ total_salary | format_sum }}</div>
-            </div>
-        </div>
-        {% endif %}
+        <h1 style="text-align:center; color:#1e40af; font-size:36px; margin: 32px 0 24px; font-weight:700;">
+        Табель производства
+    </h1>
 
-            <!-- Таблица или сообщение об отсутствии записей -->
-            {% if has_records %}
-            {% if fio_filter != "Все" and fio_filter != "" %}
-            <h2 style="text-align:center; margin:30px 0;">📋 Записи работника: {{ fio_filter }}</h2>
-            {% else %}
-            <h2 style="text-align:center; margin:30px 0;">📋 Таблица записей</h2>
-            {% endif %}
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>ФИО</th>
-                            <th>Отдел</th>
-                            <th>Товар</th>
-                            <th>Категория</th>
-                            <th>Кол-во (шт)</th>
-                            <th>Калибр (кг)</th>
-                            <th>Общий вес (кг)</th>
-                            <th>Коэф. з/п</th>
-                            <th>З/п за смену</th>
-                            <th>З/п полная</th>
-                            <th>Урезано</th>
-                            <th>Баллы</th>
-                            <th>Бонус %</th>
-                            <th>Норма (кг)</th>
-                            <th>Выполнено %</th>
-                            <th>Источник</th>
-                            <th>Дата</th>
-                            <th>Действия</th>
-                        </tr>
+    <!-- Голубая панель фильтра -->
+    <div style="background:#e0f2fe; padding:20px; border-radius:12px; margin-bottom:32px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+        <form method="get" style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; align-items:center;">
+            <div style="flex:1; min-width:200px;">
+                <label style="display:block; margin-bottom:6px; color:#1e40af;">Показать за дату:</label>
+                <input type="date" name="date" value="{{ request.args.get('date', '') }}" style="width:100%; padding:12px; border:1px solid #60a5fa; border-radius:8px; font-size:16px;">
+            </div>
+            <div style="flex:1; min-width:200px;">
+                <label style="display:block; margin-bottom:6px; color:#1e40af;">Показать отдел:</label>
+                <select name="otdel" style="width:100%; padding:12px; border:1px solid #60a5fa; border-radius:8px; font-size:16px;">
+                    <option value="Все" {% if otdel_filter == "Все" %}selected{% endif %}>Все отделы</option>
+                    <option value="Сихлаш" {% if otdel_filter == "Сихлаш" %}selected{% endif %}>Сихлаш</option>
+                    <option value="Разделка" {% if otdel_filter == "Разделка" %}selected{% endif %}>Разделка</option>
+                    <option value="Қийма" {% if otdel_filter == "Қийма" %}selected{% endif %}>Қийма</option>
+                    <option value="Котлет" {% if otdel_filter == "Котлет" %}selected{% endif %}>Котлет</option>
+                    <option value="Филе" {% if otdel_filter == "Филе" %}selected{% endif %}>Филе</option>
+                    <option value="Техперсонал" {% if otdel_filter == "Техперсонал" %}selected{% endif %}>Техперсонал</option>
+                </select>
+            </div>
+            <div style="flex:1; min-width:220px;">
+                <label style="display:block; margin-bottom:6px; color:#1e40af;">Показать работника (ФИО или ID):</label>
+                <input type="text" name="fio" placeholder="Введите ФИО или ID..." value="{{ fio_filter if fio_filter != 'Все' else '' }}" style="width:100%; padding:12px; border:1px solid #60a5fa; border-radius:8px; font-size:16px;">
+            </div>
+            <div style="align-self:end;">
+                <button type="submit" style="background:#3b82f6; color:white; padding:14px 28px; border:none; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer;">
+                    Фильтровать
+                </button>
+                <button type="button" onclick="window.location.href='/tabel'" style="background:#6b7280; color:white; padding:14px 28px; border:none; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; margin-left:12px;">
+                    Показать все
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if daily_prod %}
+    <!-- Карточки итогов слева -->
+    <div style="display:flex; gap:24px; margin-bottom:32px; flex-wrap:wrap; justify-content:center;">
+        <div style="background:#f3f4f6; padding:20px; border-radius:12px; min-width:220px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            <strong style="font-size:32px; color:#1e40af;">{{ total_records }}</strong><br>
+            <span style="font-size:16px; color:#4b5563;">Всего записей</span>
+        </div>
+        <div style="background:#f3f4f6; padding:20px; border-radius:12px; min-width:220px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            <strong style="font-size:32px; color:#059669;">{{ total_kg | round(1) }} кг</strong><br>
+            <span style="font-size:16px; color:#4b5563;">Общий вес (кг)</span>
+        </div>
+        <div style="background:#f3f4f6; padding:20px; border-radius:12px; min-width:220px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            <strong style="font-size:32px; color:#7c3aed;">{{ total_salary | format_sum }}</strong><br>
+            <span style="font-size:16px; color:#4b5563;">Общая з/п (сум)</span>
+        </div>
+    </div>
+    {% endif %}
+            <!-- Таблица -->
+    {% if has_records %}
+    <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:14px; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            <thead>
+                <tr style="background:#1e40af; color:white;">
+                    <th style="padding:14px; text-align:center;">ID</th>
+                    <th style="padding:14px; text-align:left;">ФИО</th>
+                    <th style="padding:14px; text-align:center;">Отдел</th>
+                    <th style="padding:14px; text-align:center;">ТОВАР</th>
+                    <th style="padding:14px; text-align:center;">Кол-во (шт)</th>
+                    <th style="padding:14px; text-align:center;">Калибр (кг)</th>
+                    <th style="padding:14px; text-align:center;">Общий вес (кг)</th>
+                    <th style="padding:14px; text-align:center;">Коэф.</th>
+                    <th style="padding:14px; text-align:center;">З/П за смену</th>
+                    <th style="padding:14px; text-align:center;">Урезано</th>
+                    <th style="padding:14px; text-align:center;">Бонус %</th>
+                    <th style="padding:14px; text-align:center;">Норма (кг)</th>
+                    <th style="padding:14px; text-align:center;">Выполнено %</th>
+                    <th style="padding:14px; text-align:center;">Дата</th>
+                    <th style="padding:14px; text-align:center;">Действия</th>
+                </tr>
                     </thead>
                     <tbody>
                         {% for r in daily_prod %}
-                        <tr class="source-{{ r.source }}">
-                            <td><strong>{{ r.worker_id }}</strong></td>
-                            <td>{{ r.fio }}</td>
-                            <td>{{ r.otdel }}</td>
-                            <td>{{ r.product }}</td>
-                            <td>{{ r.category }}</td>
-                            <td>{{ r.quantity_pieces }}</td>
-                            <td>{{ r.caliber_kg }}</td>
-                            <td>{{ "%.1f" | format(r.quantity_kg) }}</td>
-                            <td class="{% if r.salary_coeff < 1 %}coeff-low{% endif %}">{{ r.salary_coeff }}×</td>
-                            <td class="salary-positive">{{ r.daily_salary | format_sum }}</td>
-                            <td class="salary-positive">{{ r.full_salary | format_sum }}</td>
-                            <td class="salary-negative">
-                                {% if r.reduced_amount > 0 %}
-                                    -{{ r.reduced_amount | format_sum }}
+                        <tr style="border-bottom:1px solid #e2e8f0;">
+                            <td style="padding:10px; text-align:center;">{{ r.worker_id }}</td>
+                            <td style="padding:10px; text-align:left; font-weight:500;">{{ r.fio }}</td>
+                            <td style="padding:10px; text-align:center;">{{ r.otdel }}</td>
+                            <td style="padding:10px; white-space:pre-wrap; line-height:1.4;">
+                                {% if r.products_list and r.products_list | length > 1 %}
+                                    <details style="cursor:pointer; margin: 0;">
+                                        <summary style="color:#2563eb; font-weight:600; list-style:none; display:flex; align-items:center; gap:4px; font-size:14px;">
+                                            <span style="font-size:14px;">▼</span>
+                                            {{ r.products_list | length }}
+                                        </summary>
+                                        <div style="margin-top:4px; color:#374151; font-size:13px;">
+                                            {% for item in r.products_list %}
+                                                <div style="margin-bottom:2px;">{{ item.strip() }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </details>
                                 {% else %}
-                                    0
+                                    {{ r.product }}
                                 {% endif %}
                             </td>
-                            <td>{{ r.total_points }}</td>
-                            <td class="{% if r.bonus_percent >= 15 %}bonus-good{% elif r.bonus_percent > 0 %}bonus-warning{% else %}bonus-bad{% endif %}">
-                                {{ r.bonus_percent }}%
-                            </td>
-                            <td>{{ r.norm_kg }}</td>
-                            <td style="color: 
-                                {% if r.percent_complete >= 100 %}#27ae60
-                                {% elif r.percent_complete >= 80 %}#f39c12
-                                {% else %}#e74c3c{% endif %};
-                                font-weight: bold; text-align: right; background: 
-                                {% if r.percent_complete >= 100 %}#e8f5e9
-                                {% elif r.percent_complete >= 80 %}#fff3e0
-                                {% else %}#ffebee{% endif %};">
-                                {{ r.percent_complete }}%
-                            </td>
-                            <td>
-                                {% if r.source == "manual" %}
-                                    <span style="background:#fff9e6; padding:4px 8px; border-radius:4px; font-size:12px;">✏️ Вручную</span>
-                                {% else %}
-                                    <span style="background:#e0e0e0; padding:4px 8px; border-radius:4px; font-size:12px;">📷 Фото</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ r.date }}</td>
-                            <td>
-                                <a href="#" onclick="editDate({{ r.id }})" title="Изменить дату" style="color:#3b82f6; margin-right:10px; text-decoration:none; cursor:pointer; opacity:0.8;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">📅</a>
-                                <a href="/delete/{{ r.id }}" class="action-btn delete-btn" onclick="return confirm('Вы уверены, что хотите удалить запись?\n\nРаботник: {{ r.fio }}\nТовар: {{ r.product }}\nID: {{ r.id }}');">🗑️</a>
+                            <td style="padding:10px; text-align:center; font-weight:bold;">{{ r.quantity_pieces }}</td>
+                            <td style="padding:10px; text-align:center;">{{ r.caliber_kg }}</td>
+                            <td style="padding:10px; text-align:center; font-weight:bold; color:#059669;">{{ "%.1f" | format(r.quantity_kg) }} кг</td>
+                            <td style="padding:10px; text-align:center;">{{ r.salary_coeff }}x</td>
+                            <td style="padding:10px; text-align:center; font-weight:bold; color:#7c3aed;">{{ r.full_salary }} сум</td>
+                            <td style="padding:10px; text-align:center;">{{ r.reduced_amount }}</td>
+                            <td style="padding:10px; text-align:center; color:#ea580c;">{{ r.bonus_percent }}%</td>
+                            <td style="padding:10px; text-align:center;">{{ r.norm_kg }} кг</td>
+                            <td style="padding:10px; text-align:center; font-weight:bold; color:{% if r.percent_complete >= 100 %}#10b981{% else %}#ef4444{% endif %};">{{ r.percent_complete }}%</td>
+                            <td style="padding:10px; text-align:center;">{{ r.date }}</td>
+                            <td style="padding:10px; text-align:center; white-space:nowrap;">
+                                <a href="#" onclick="editDate({{ r.id }})" style="color:#3b82f6; margin-right:8px;">📅</a>
+                                <a href="/delete/{{ r.id }}" onclick="return confirm('Удалить?')" style="color:#ef4444;">🗑️</a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
-        </div>
+    </div>
+    {% else %}
+    <div style="text-align:center; margin:60px 0; padding:30px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:12px; color:#721c24; font-size:20px;">
+        {% if fio_filter != "Все" and fio_filter != "" %}
+            По работнику "{{ fio_filter }}" за этот день нет записей
+        {% elif otdel_filter != "Все" %}
+            По отделу "{{ otdel_filter }}" за этот день нет записей
         {% else %}
-        <div style="text-align:center; margin:60px 0; padding:30px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:12px; color:#721c24; font-size:20px;">
-            {% if fio_filter != "Все" and fio_filter != "" %}
-                По работнику "{{ fio_filter }}" за этот день нет записей
-            {% elif otdel_filter != "Все" %}
-                По отделу "{{ otdel_filter }}" за этот день нет записей
-            {% else %}
-                За этот день ещё нет записей
-            {% endif %}
-        </div>
+            За этот день ещё нет записей
         {% endif %}
+    </div>
+    {% endif %}
 
-        <!-- Блок итога за месяц -->
-        <div style="background:white; padding:24px; border-radius:16px; text-align:center; margin:40px 0; box-shadow:0 4px 20px rgba(0,0,0,0.06); border:1px solid rgba(0,0,0,0.05);">
-            <strong style="color:#374151; font-size:1.1em; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:12px;">Итого за февраль 2026</strong>
-            <span style="font-size:2.2em; color:#0f172a; font-weight:700;">{{ monthly_salary | format_sum }} сум</span>
-        </div>
-
-        <!-- Кнопки действий -->
-        <div class="action-buttons">
-            <a href="/export?date={{ request.args.get('date') or '' }}" class="btn-primary">
-                📥 Скачать табель за день (Excel)
-            </a>
-            <a href="/export" class="btn-success">
-                📊 Скачать весь табель (Excel)
-            </a>
-            <a href="/monthly_report" class="btn-purple">
-                📈 Отчёт за месяц по категориям
-            </a>
-        </div>
-
-        <div class="back">
-            <a href="/input">← Вернуться к вводу данных</a>
-        </div>
+        <!-- Кнопки скачивания и "Вернуться" внизу -->
+    <div style="margin-top:32px; text-align:center;">
+        <a href="/export?date={{ request.args.get('date') or '' }}" style="background:#3b82f6; color:white; padding:14px 28px; border:none; border-radius:8px; font-size:16px; margin:8px; cursor:pointer; text-decoration:none; display:inline-block;">
+            Скачать таблицу за день (Excel)
+        </a>
+        <a href="/export" style="background:#10b981; color:white; padding:14px 28px; border:none; border-radius:8px; font-size:16px; margin:8px; cursor:pointer; text-decoration:none; display:inline-block;">
+            Скачать весь табель (Excel)
+        </a>
+        <a href="/monthly_report" style="background:#8b5cf6; color:white; padding:14px 28px; border:none; border-radius:8px; font-size:16px; margin:8px; cursor:pointer; text-decoration:none; display:inline-block;">
+            Отчёт за месяц по категориям
+        </a>
+    </div>
+    <div style="text-align:center; margin-top:24px;">
+        <a href="/input" style="background:#ef4444; color:white; padding:16px 32px; border-radius:10px; text-decoration:none; font-size:18px; font-weight:600; display:inline-block;">
+            ← Вернуться к вводу данных
+        </a>
+    </div>
 
         <script>
             const fioInput = document.getElementById('fio_search');

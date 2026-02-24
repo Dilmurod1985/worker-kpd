@@ -280,93 +280,139 @@ def index():
 
 @app.route("/input", methods=["GET", "POST"])
 def input_prod():
+    from datetime import datetime
     success = None
     error = None
+
+    # GET параметры для предзаполнения формы
+    selected_worker = request.args.get('worker')
+    selected_date = request.args.get('date') or datetime.now().strftime('%Y-%m-%d')
+    selected_discipline = request.args.get('discipline', '0')
+    today = datetime.now().strftime('%Y-%m-%d')
 
     if request.method == "POST":
         worker_id = request.form.get("worker_id")
         fio = request.form.get("fio")
-        product = request.form.get("product")
-        quantity = request.form.get("quantity")
-        caliber_kg = request.form.get("caliber_kg")
         date = request.form.get("date")
 
-        if not fio or not product or not quantity or not caliber_kg or not date:
-            error = "Заполните все поля!"
+        if not fio or not date:
+            error = "Заполните ФИО и дату!"
         else:
             try:
-                quantity_pieces = int(quantity)
-                selected_caliber_kg = float(caliber_kg)
-                quantity_kg = quantity_pieces * selected_caliber_kg
+                # Собираем данные по 3 товарам и суммируем
+                products = []
+                total_qty = 0
+                total_weight = 0.0
 
-                # Находим работника по ID или ФИО
-                worker = next((w for w in WORKERS_TABLE if w["id"] == worker_id or w["fio"] == fio), None)
+                for i in range(1, 4):
+                    group = request.form.get(f'group{i}')
+                    prod = request.form.get(f'product{i}')
+                    qty_str = request.form.get(f'quantity{i}', '0')
+                    cal_str = request.form.get(f'caliber{i}', '0')
 
-                if not worker:
-                    error = "Ошибка: работник не найден!"
+                    try:
+                        qty = int(qty_str)
+                        cal = float(cal_str.split()[0]) if cal_str else 0.0
+                    except:
+                        qty = 0
+                        cal = 0.0
+
+                    if prod and qty > 0:
+                        products.append(f"{prod} ({qty} шт, {cal} кг/шт)")
+                        total_qty += qty
+                        total_weight += qty * cal
+
+                product_str = " + ".join(products) if products else ''
+
+                if not product_str:
+                    error = "Добавьте хотя бы один товар!"
                 else:
-                    category = worker.get("category", "")
-                    daily_rate = DAILY_RATES.get(category, 0)
-                    daily_salary = daily_rate  # фиксированная ставка за день
+                    # Находим работника по ID или ФИО
+                    worker = next((w for w in WORKERS_TABLE if w["id"] == worker_id or w["fio"] == fio), None)
 
-                    # Расчет нормы и % выполнения
-                    norm_kg = KG_NORMS.get(category, 0)
-                    percent_complete = (quantity_kg / norm_kg * 100) if norm_kg > 0 else 0
-
-                    # Расчет коэффициента з/п и бонуса по норме
-                    if percent_complete >= 90:
-                        salary_coeff = 1.0
-                        if percent_complete >= 100:
-                            bonus_percent = 20
-                        elif percent_complete >= 80:
-                            bonus_percent = 10
-                        else:
-                            bonus_percent = 0
-                    elif percent_complete >= 80:
-                        salary_coeff = 0.9
-                        bonus_percent = 0
-                    elif percent_complete >= 70:
-                        salary_coeff = 0.7
-                        bonus_percent = 0
+                    if not worker:
+                        error = "Ошибка: работник не найден!"
                     else:
-                        salary_coeff = 0.5
-                        bonus_percent = 0
+                        category = worker.get("category", "")
+                        daily_rate = DAILY_RATES.get(category, 0)
+                        daily_salary = daily_rate  # фиксированная ставка за день
 
-                    daily_salary = int(daily_rate * salary_coeff)
+                        # Расчет нормы и % выполнения
+                        norm_kg = KG_NORMS.get(category, 0)
+                        percent_complete = (total_weight / norm_kg * 100) if norm_kg > 0 else 0
 
-                    full_salary = daily_rate  # полная ставка без коэффициента
-                    reduced_amount = full_salary - daily_salary  # сколько урезано
+                        # Расчет коэффициента з/п и бонуса по норме
+                        if percent_complete >= 90:
+                            salary_coeff = 1.0
+                            if percent_complete >= 100:
+                                bonus_percent = 20
+                            elif percent_complete >= 80:
+                                bonus_percent = 10
+                            else:
+                                bonus_percent = 0
+                        elif percent_complete >= 80:
+                            salary_coeff = 0.9
+                            bonus_percent = 0
+                        elif percent_complete >= 70:
+                            salary_coeff = 0.7
+                            bonus_percent = 0
+                        else:
+                            salary_coeff = 0.5
+                            bonus_percent = 0
 
-                    # Чек-лист дисциплины
-                    discipline_total = int(request.form.get('discipline_total', 0))
-                    
-                    # Отдел работника
-                    otdel = worker.get("otdel", "")
-                    record = {
-                        "worker_id": worker["id"],
-                        "fio": fio,
-                        "product": product,
-                        "quantity_pieces": quantity_pieces,
-                        "caliber_kg": selected_caliber_kg,
-                        "quantity_kg": round(quantity_kg, 1),
-                        "category": category,
-                        "daily_rate": daily_rate,
-                        "salary_coeff": salary_coeff,
-                        "daily_salary": daily_salary,
-                        "full_salary": full_salary,
-                        "reduced_amount": reduced_amount,
-                        "bonus_percent": bonus_percent,
-                        "otdel": otdel,
-                        "date": date,
-                        "source": "manual",
-                        "discipline_total": discipline_total,
-                        "norm_kg": norm_kg,
-                        "percent_complete": round(percent_complete, 1)
-                    }
-                    add_record(record)
-                    success = f"Добавлено: {fio} — {quantity_pieces} шт × {selected_caliber_kg} кг = {quantity_kg} кг | З/П: {daily_salary:,} сум"
+                        daily_salary = int(daily_rate * salary_coeff)
+
+                        full_salary = daily_rate  # полная ставка без коэффициента
+                        reduced_amount = full_salary - daily_salary  # сколько урезано
+                        
+                        print(f"DEBUG: daily_salary={daily_salary}, full_salary={full_salary}, reduced_amount={reduced_amount}")
+                        
+                        # Чек-лист дисциплины - суммируем 5 отдельных полей
+                        sanitation = int(request.form.get('sanitation', 0))
+                        technology = int(request.form.get('technology', 0))
+                        quality = int(request.form.get('quality', 0))
+                        discipline = int(request.form.get('discipline', 0))
+                        equipment = int(request.form.get('equipment', 0))
+                        
+                        discipline_total = sanitation + technology + quality + discipline + equipment
+                        
+                        # Отдел работника
+                        otdel = worker.get("otdel", "")
+                        record = {
+                            "date": date,
+                            "worker_id": worker["id"],
+                            "fio": fio,
+                            "otdel": otdel,
+                            "product": product_str,
+                            "category": category,
+                            "quantity_pieces": total_qty,
+                            "caliber_kg": total_weight / total_qty if total_qty > 0 else 0,  # средний калибр
+                            "quantity_kg": round(total_weight, 1),
+                            "salary_coeff": salary_coeff,
+                            "daily_salary": daily_salary,
+                            "full_salary": full_salary,
+                            "reduced_amount": reduced_amount,
+                            "percent_complete": round(percent_complete, 1),
+                            "total_points": 0,  # Добавляем недостающее поле
+                            "bonus_percent": bonus_percent,
+                            "discipline_total": discipline_total,
+                            "source": "manual"
+                        }
+                        
+                        print("DEBUG: discipline_total добавлен в new_record:", record['discipline_total'])
+                        add_record(record)
+                        return redirect(url_for('input_prod', 
+                                               worker=request.form.get('fio'),
+                                               date=request.form.get('date'),
+                                               discipline=discipline_total,
+                                               success='true'))
             except ValueError:
                 error = "Ошибка при расчете количества!"
+    else:
+        # Для GET запроса устанавливаем значения по умолчанию
+        last_worker = selected_worker
+        last_date = selected_date
+        last_discipline = selected_discipline or 0
 
     return render_template("input.html", 
                           groups=GROUPS_LIST,
@@ -374,9 +420,16 @@ def input_prod():
                           workers=WORKERS_TABLE,
                           caliber_options=CALIBER_OPTIONS_KG,
                           daily_rates=DAILY_RATES,
-                          success=success, 
+                          success=request.args.get('success') == 'true', 
                           error=error,
-                          kg_norms=KG_NORMS)
+                          kg_norms=KG_NORMS,
+                          selected_worker=selected_worker,
+                          selected_date=selected_date,
+                          selected_discipline=selected_discipline,
+                          last_worker=selected_worker,
+                          last_date=selected_date,
+                          last_discipline=selected_discipline,
+                          today=today)
 
 
 
@@ -463,10 +516,47 @@ def tabel():
         if selected_worker and selected_worker["otdel"] != otdel_filter:
             warning_message = f'"{fio_filter}" — работник отдела "{selected_worker["otdel"]}", а не "{otdel_filter}"'
     
+    # Группировка записей по worker_id + date
+    grouped_records = {}
+    for record in filtered_prod:
+        key = (record.get("worker_id"), record.get("date"))
+        if key not in grouped_records:
+            grouped_records[key] = []
+        grouped_records[key].append(record)
+    
+    # Объединяем записи в одну строку
+    final_records = []
+    for key, group in grouped_records.items():
+        if len(group) == 1:
+            # Одна запись - оставляем как есть
+            final_records.append(group[0])
+        else:
+            # Несколько записей - объединяем
+            first_record = group[0].copy()
+            products_list = [r.get("product", "") for r in group]
+            
+            # Суммируем значения
+            total_pieces = sum(r.get("quantity_pieces", 0) for r in group)
+            total_kg = sum(r.get("quantity_kg", 0) for r in group)
+            total_salary = sum(r.get("daily_salary", 0) for r in group)
+            total_full_salary = sum(r.get("full_salary", 0) for r in group)
+            total_points = sum(r.get("total_points", 0) for r in group)
+            
+            # Обновляем первую запись
+            first_record["products_list"] = products_list
+            first_record["quantity_pieces"] = total_pieces
+            first_record["quantity_kg"] = total_kg
+            first_record["daily_salary"] = total_salary
+            first_record["full_salary"] = total_full_salary
+            first_record["total_points"] = total_points
+            first_record["product"] = f"{len(products_list)} вида донера"
+            
+            final_records.append(first_record)
+    
     # Рассчитываем итоги за день/фильтр
-    total_records = len(filtered_prod)
-    total_kg = sum(r.get("quantity_kg", 0) for r in filtered_prod)
-    total_salary = sum(r.get("daily_salary", 0) for r in filtered_prod)
+    total_records = len(final_records)
+    total_kg = sum(r.get("quantity_kg", 0) for r in final_records)
+    total_salary = sum(r.get("daily_salary", 0) for r in final_records)
     
     # Итого за месяц (все даты)
     all_records_for_month = get_all_records()
@@ -475,12 +565,12 @@ def tabel():
     total_salary_formatted = "{:,}".format(int(total_salary)).replace(",", " ")
     monthly_salary_formatted = "{:,}".format(int(monthly_salary)).replace(",", " ")
     
-    has_records = len(filtered_prod) > 0
+    has_records = len(final_records) > 0
     print(f"DEBUG: has_records = {has_records}")
     
     return render_template("tabel.html", 
                           workers=WORKERS_TABLE,
-                          daily_prod=filtered_prod,
+                          daily_prod=final_records,
                           category_rates=DAILY_RATES,
                           total_records=total_records,
                           total_kg=total_kg,
@@ -695,7 +785,6 @@ def monthly_report():
     )
 
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("DEBUG", "False") == "True"
-    app.run(host="0.0.0.0", port=port, debug=debug_mode)
+if __name__ == '__main__':
+    print("Запускаю сервер строго на порту 5000...")
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)

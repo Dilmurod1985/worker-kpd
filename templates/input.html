@@ -32,8 +32,24 @@
             <div class="error">{{ error }}</div>
         {% endif %}
         {% if success %}
-            <div class="success">{{ success }}</div>
-        {% endif %}
+        <div style="margin: 32px 0; text-align: center; padding: 24px; background: #f0fdf4; border-radius: 12px; border: 1px solid #86efac;">
+            <p style="color:#15803d; font-size:22px; font-weight:700; margin-bottom: 20px;">
+                Запись успешно добавлена!
+            </p>
+            
+            <a href="/input?worker={{ last_worker }}&date={{ last_date }}&discipline={{ last_discipline }}"
+               style="display:inline-block; padding:16px 40px; background:#10b981; color:white; border-radius:12px; text-decoration:none; font-size:20px; font-weight:600; margin:12px;">
+               Добавить ещё один вид товара
+            </a>
+            
+            <br><br>
+            
+            <a href="/tabel?date={{ last_date }}" 
+               style="color:#64748b; font-size:18px; text-decoration:underline;">
+               Закончить смену и перейти в табель
+            </a>
+        </div>
+    {% endif %}
 
         <form method="post">
             <label for="worker_id">ID работника</label>
@@ -49,46 +65,125 @@
             <select name="fio" id="fio" required>
                 <option value="">Выберите...</option>
                 {% for w in workers %}
-                    <option value="{{ w.fio }}" data-id="{{ w.id | string }}" data-category="{{ w.category }}" data-otdel="{{ w.otdel }}">{{ w.fio }} ({{ w.category }})</option>
+                    <option value="{{ w.fio }}" data-id="{{ w.id | string }}" data-category="{{ w.category }}" data-otdel="{{ w.otdel }}" {% if w.fio == selected_worker %}selected{% endif %}>{{ w.fio }} ({{ w.category }})</option>
                 {% endfor %}
             </select>
 
-            <div class="form-group">
-                <label for="group_select">Группа товара:</label>
-                <select id="group_select" name="group" onchange="updateProducts()" required>
-                    <option value="">Выберите группу...</option>
-                    {% for group in groups %}
-                        <option value="{{ group }}">{{ group }}</option>
-                    {% endfor %}
-                </select>
+            <!-- Блок товаров - 3 блока для нескольких видов товара -->
+            <div id="products_container">
+                <!-- Товар 1 -->
+                <div class="product-block" style="margin: 24px 0; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <h3 style="margin-top: 0; color: #1f2937;">Товар 1</h3>
+                    <select name="group1" onchange="updateProduct(1)" style="width:100%; padding:12px; margin-bottom:12px;">
+                        <option value="">Группа товара</option>
+                        {% for group in groups %}
+                            <option value="{{ group }}">{{ group }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="product1" required style="width:100%; padding:12px; margin-bottom:12px;">
+                        <option value="">Ассортимент</option>
+                    </select>
+                    <input type="number" name="quantity1" placeholder="Количество штук" min="0" step="1" required style="width:48%; padding:12px;">
+                    <select name="caliber1" required style="width:48%; padding:12px; margin-left:4%;">
+                        <option value="">Калибр (кг/шт)</option>
+                        {% for c in [5,6,8,10,12,15,20,25,30,35,40,50,60] %}
+                            <option value="{{ c }}">{{ c }} кг/шт</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Товар 2 -->
+                <div class="product-block" style="margin: 24px 0; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <h3 style="margin-top: 0; color: #1f2937;">Товар 2</h3>
+                    <select name="group2" onchange="updateProduct(2)" style="width:100%; padding:12px; margin-bottom:12px;">
+                        <option value="">Группа товара</option>
+                        {% for group in groups %}
+                            <option value="{{ group }}">{{ group }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="product2" style="width:100%; padding:12px; margin-bottom:12px;">
+                        <option value="">Ассортимент</option>
+                    </select>
+                    <input type="number" name="quantity2" placeholder="Количество штук" min="0" step="1" style="width:48%; padding:12px;">
+                    <select name="caliber2" style="width:48%; padding:12px; margin-left:4%;">
+                        <option value="">Калибр (кг/шт)</option>
+                        {% for c in [5,6,8,10,12,15,20,25,30,35,40,50,60] %}
+                            <option value="{{ c }}">{{ c }} кг/шт</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Товар 3 -->
+                <div class="product-block" style="margin: 24px 0; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <h3 style="margin-top: 0; color: #1f2937;">Товар 3</h3>
+                    <select name="group3" onchange="updateProduct(3)" style="width:100%; padding:12px; margin-bottom:12px;">
+                        <option value="">Группа товара</option>
+                        {% for group in groups %}
+                            <option value="{{ group }}">{{ group }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="product3" style="width:100%; padding:12px; margin-bottom:12px;">
+                        <option value="">Ассортимент</option>
+                    </select>
+                    <input type="number" name="quantity3" placeholder="Количество штук" min="0" step="1" style="width:48%; padding:12px;">
+                    <select name="caliber3" style="width:48%; padding:12px; margin-left:4%;">
+                        <option value="">Калибр (кг/шт)</option>
+                        {% for c in [5,6,8,10,12,15,20,25,30,35,40,50,60] %}
+                            <option value="{{ c }}">{{ c }} кг/шт</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="product_select">Ассортимент:</label>
-                <select id="product_select" name="product" required>
-                    <option value="">Сначала выберите группу</option>
-                </select>
-            </div>
-
-            <label for="quantity">Количество штук</label>
-            <input type="number" name="quantity" id="quantity" min="0" required>
-
-            <label for="caliber_kg">Калибр Go'sht (кг/шт)</label>
-            <select name="caliber_kg" id="caliber" required>
-                <option value="">Выберите калибр...</option>
-                {% for kg in caliber_options %}
-                    <option value="{{ kg }}">{{ kg }} кг/шт</option>
-                {% endfor %}
-            </select>
-
-            <div class="form-group" style="margin-bottom: 32px;">
-                <label for="discipline_total">Чек-лист дисциплины (баллы за смену):</label>
-                <select id="discipline_total" name="discipline_total" required style="font-size:20px; padding:16px; width:100%; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc;">
-                    {% for i in range(101) %}
-                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }} баллов</option>
+            <!-- Чек-лист дисциплины - 5 отдельных пунктов -->
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="sanitation">Санитария и гигиена (0–20):</label>
+                <select id="sanitation" name="sanitation" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                    {% for i in range(21) %}
+                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
                     {% endfor %}
                 </select>
-                <small style="color:#666; font-size:14px; display:block; margin-top:8px;">Выберите общее количество баллов за всю смену (0–100)</small>
+                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="technology">Соблюдение технологии (0–20):</label>
+                <select id="technology" name="technology" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                    {% for i in range(21) %}
+                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="quality">Качество продукции (0–15):</label>
+                <select id="quality" name="quality" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                    {% for i in range(16) %}
+                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="discipline">Производственная дисциплина (0–15):</label>
+                <select id="discipline" name="discipline" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                    {% for i in range(16) %}
+                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="equipment">Состояние оборудования (0–10):</label>
+                <select id="equipment" name="equipment" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                    {% for i in range(11) %}
+                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
             </div>
 
             <small id="bonus_hint" style="display:block; margin-top:10px; color:#f39c12; font-weight:bold;">
@@ -108,7 +203,7 @@
             </small>
 
             <label>Дата</label>
-            <input type="date" name="date" id="date" required>
+            <input type="date" name="date" id="date" value="{{ selected_date or today }}" required>
 
             <button type="submit">Добавить запись</button>
         </form>
@@ -125,50 +220,6 @@
             "{{ category }}": {{ rate }}{{ "," if not loop.last else "" }}
         {% endfor %}
     };
-
-    // Автозаполнение ФИО по ID и обновление з/п
-    document.getElementById('worker_id').addEventListener('input', function() {
-        const id = this.value.trim();
-        const errorDiv = document.getElementById('id_error');
-        const fioSelect = document.getElementById('fio');
-
-        errorDiv.style.display = 'none';
-        fioSelect.value = '';  // очищаем ФИО
-        document.getElementById('otdel_display').value = '';
-
-        if (!id) return;
-
-        let found = false;
-        for (let option of fioSelect.options) {
-            if (option.dataset.id === id) {
-                fioSelect.value = option.value;
-                document.getElementById('otdel_display').value = option.dataset.otdel || '';
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            errorDiv.textContent = `Нет работника с ID ${id}`;
-            errorDiv.style.display = 'block';
-        } else {
-            updateSalary();
-        }
-    });
-
-    // Обновление з/п при изменении работника
-    document.getElementById('fio').addEventListener('change', updateSalary);
-
-    // Расчёт кг и обновление з/п
-    function updateCalc() {
-        const qty = parseFloat(document.getElementById('quantity').value) || 0;
-        const kg = parseFloat(document.getElementById('caliber').value) || 0;
-        const total = qty * kg;
-        document.getElementById('calc_hint').textContent = 
-            qty + ' шт × ' + kg + ' кг = ' + total.toFixed(1) + ' кг';
-        updateSalary();
-        updateNorm();
-    }
 
     // Обновление отображаемой з/п по категории
     function updateSalary() {
@@ -204,18 +255,48 @@
             'З/п за смену: ' + Math.round(salary).toLocaleString('ru-RU') + ' сум | Бонус: ' + bonus + '%';
     }
 
-    document.getElementById('quantity').addEventListener('input', updateCalc);
-    document.getElementById('caliber').addEventListener('change', updateCalc);
+    // Автозаполнение ФИО по ID и обновление з/п
+    document.getElementById('worker_id').addEventListener('input', function() {
+        const id = this.value.trim();
+        const errorDiv = document.getElementById('id_error');
+        const fioSelect = document.getElementById('fio');
 
-    // Сегодняшняя дата
-    document.getElementById('date').valueAsDate = new Date();
+        errorDiv.style.display = 'none';
+        fioSelect.value = '';  // очищаем ФИО
+        document.getElementById('otdel_display').value = '';
 
-    // Запуск расчёта при загрузке
-    updateCalc();
+        if (!id) return;
+
+        let found = false;
+        for (let option of fioSelect.options) {
+            if (option.dataset.id === id) {
+                fioSelect.value = option.value;
+                document.getElementById('otdel_display').value = option.dataset.otdel || '';
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            errorDiv.textContent = `Нет работника с ID ${id}`;
+            errorDiv.style.display = 'block';
+        } else {
+            updateSalary();
+        }
+    });
+
+    // Обновление з/п при изменении работника
+    document.getElementById('fio').addEventListener('change', updateSalary);
 
     // Чек-лист бонуса
     function updateBonus() {
-        const disciplineTotal = parseInt(document.getElementById('discipline_total').value) || 0;
+        const sanitation = parseInt(document.getElementById('sanitation').value) || 0;
+        const technology = parseInt(document.getElementById('technology').value) || 0;
+        const quality = parseInt(document.getElementById('quality').value) || 0;
+        const discipline = parseInt(document.getElementById('discipline').value) || 0;
+        const equipment = parseInt(document.getElementById('equipment').value) || 0;
+        
+        const disciplineTotal = sanitation + technology + quality + discipline + equipment;
         let percent = 0;
         if (disciplineTotal >= 90) percent = 100;
         else if (disciplineTotal >= 75) percent = 75;
@@ -235,32 +316,98 @@
         updateSalary();  // обновить з/п после изменения нормы
     }
 
-    // Привязываем события
-    document.getElementById('discipline_total').addEventListener('change', updateBonus);
-    updateBonus(); // при загрузке
-    updateNorm(); // при загрузке
-
     // Функция обновления продуктов на основе выбранной группы
     const productsByGroup = {{ products_by_group | tojson }};
+    
+    // Отладочный вывод
+    console.log('productsByGroup:', productsByGroup);
 
-    function updateProducts() {
-        const group = document.getElementById('group_select').value;
-        const productSelect = document.getElementById('product_select');
+    function updateProduct(num) {
+        console.log('updateProduct called with num:', num);
+        const groupSelect = document.querySelector(`select[name="group${num}"]`);
+        const productSelect = document.querySelector(`select[name="product${num}"]`);
+        const selectedGroup = groupSelect.value;
+        
+        console.log('selectedGroup:', selectedGroup);
 
         productSelect.innerHTML = '<option value="">Выберите ассортимент...</option>';
 
-        if (group && productsByGroup[group]) {
-            productsByGroup[group].forEach(item => {
+        if (selectedGroup && productsByGroup[selectedGroup]) {
+            console.log('Products for group:', productsByGroup[selectedGroup]);
+            productsByGroup[selectedGroup].forEach(item => {
                 const option = document.createElement('option');
                 option.value = item;
                 option.textContent = item;
                 productSelect.appendChild(option);
             });
+        } else {
+            console.log('No products found for group:', selectedGroup);
         }
     }
 
-    // Привязываем событие
-    document.getElementById('group_select').addEventListener('change', updateProducts);
+    // Функция для обновления всех расчётов
+    function updateAllCalcs() {
+        let totalQty = 0;
+        let totalWeight = 0;
+        
+        for (let i = 1; i <= 3; i++) {
+            const qty = parseFloat(document.querySelector(`input[name="quantity${i}"]`).value) || 0;
+            const kg = parseFloat(document.querySelector(`select[name="caliber${i}"]`).value) || 0;
+            totalQty += qty;
+            totalWeight += qty * kg;
+        }
+        
+        document.getElementById('calc_hint').textContent = 
+            totalQty + ' шт × ' + (totalWeight/totalQty).toFixed(1) + ' кг = ' + totalWeight.toFixed(1) + ' кг';
+        
+        updateSalary();
+        updateNorm();
+    }
+
+    // Сегодняшняя дата
+    document.getElementById('date').valueAsDate = new Date();
+
+    // Привязываем события для всех полей чек-листа
+    document.getElementById('sanitation').addEventListener('change', updateBonus);
+    document.getElementById('technology').addEventListener('change', updateBonus);
+    document.getElementById('quality').addEventListener('change', updateBonus);
+    document.getElementById('discipline').addEventListener('change', updateBonus);
+    document.getElementById('equipment').addEventListener('change', updateBonus);
+
+    // Привязываем события для всех блоков товаров
+    for (let i = 1; i <= 3; i++) {
+        const qtyInput = document.querySelector(`input[name="quantity${i}"]`);
+        const calSelect = document.querySelector(`select[name="caliber${i}"]`);
+        const groupSelect = document.querySelector(`select[name="group${i}"]`);
+        
+        if (qtyInput) qtyInput.addEventListener('input', updateAllCalcs);
+        if (calSelect) calSelect.addEventListener('change', updateAllCalcs);
+        if (groupSelect) groupSelect.addEventListener('change', function() {
+            updateProduct(i);
+        });
+    }
+
+    // Запуск расчётов при загрузке
+    updateAllCalcs();
+    updateBonus(); // при загрузке
+    updateNorm(); // при загрузке
+
+    // Очистка полей товара после успешного добавления
+    {% if success %}
+        // Очищаем только поля товара для всех 3 блоков
+        for (let i = 1; i <= 3; i++) {
+            document.querySelector(`select[name="group${i}"]`).value = '';
+            document.querySelector(`select[name="product${i}"]`).innerHTML = '<option value="">Выберите ассортимент...</option>';
+            document.querySelector(`input[name="quantity${i}"]`).value = '';
+            document.querySelector(`select[name="caliber${i}"]`).value = '';
+        }
+        
+        // Очищаем подсказки
+        document.getElementById('bonus_hint').textContent = 'Итоговый бонус: 0%';
+        document.getElementById('norm_hint').textContent = 'Норма: 0 кг | Выполнено: 0%';
+        document.getElementById('calc_hint').textContent = '0 шт × 0 кг = 0 кг';
+        document.getElementById('salary_hint').textContent = 'З/п за смену: 0 сум | Бонус: 20%';
+    {% endif %}
     </script>
 </body>
 </html>
