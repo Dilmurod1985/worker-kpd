@@ -135,56 +135,58 @@
                 </div>
             </div>
 
-            <!-- Чек-лист дисциплины - 5 отдельных пунктов -->
-            <div class="form-group" style="margin-bottom: 24px;">
-                <label for="sanitation">Санитария и гигиена (0–20):</label>
-                <select id="sanitation" name="sanitation" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
-                    {% for i in range(21) %}
-                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
-                    {% endfor %}
-                </select>
-                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 24px;">
-                <label for="technology">Соблюдение технологии (0–20):</label>
-                <select id="technology" name="technology" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
-                    {% for i in range(21) %}
-                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
-                    {% endfor %}
-                </select>
-                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 24px;">
-                <label for="quality">Качество продукции (0–15):</label>
-                <select id="quality" name="quality" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
-                    {% for i in range(16) %}
-                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
-                    {% endfor %}
-                </select>
-                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 24px;">
-                <label for="discipline">Производственная дисциплина (0–15):</label>
-                <select id="discipline" name="discipline" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
-                    {% for i in range(16) %}
-                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
-                    {% endfor %}
-                </select>
-                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 24px;">
-                <label for="equipment">Состояние оборудования (0–10):</label>
-                <select id="equipment" name="equipment" required style="font-size:18px; padding:14px; width:100%; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
-                    {% for i in range(11) %}
-                        <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
-                    {% endfor %}
-                </select>
-                <small style="color:#666; font-size:13px; display:block; margin-top:6px;">Выберите баллы</small>
-            </div>
+            <!-- Чек-лист дисциплины в виде аккордеона -->
+            <details style="margin: 24px 0; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+                <summary style="padding:16px; font-size:18px; font-weight:600; color:#1e40af; cursor:pointer; background:#eff6ff; list-style:none; display:flex; justify-content:space-between; align-items:center;">
+                    Чек-лист дисциплины (баллы за смену)
+                    <span style="font-size:24px;">▼</span>
+                </summary>
+                <div style="padding:16px;">
+                    <div style="margin-bottom:16px;">
+                        <label>Санитария и гигиена (0-20):</label>
+                        <select id="sanitation" name="sanitation" required style="width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                            {% for i in range(21) %}
+                                <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label>Соблюдение технологии (0-20):</label>
+                        <select id="technology" name="technology" required style="width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                            {% for i in range(21) %}
+                                <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label>Качество продукции (0-15):</label>
+                        <select id="quality" name="quality" required style="width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                            {% for i in range(16) %}
+                                <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label>Производственная дисциплина (0-15):</label>
+                        <select id="discipline" name="discipline" required style="width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                            {% for i in range(16) %}
+                                <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label>Состояние оборудования (0-10):</label>
+                        <select id="equipment" name="equipment" required style="width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc;">
+                            {% for i in range(11) %}
+                                <option value="{{ i }}" {% if i == 0 %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="margin-top:20px; font-weight:600; color:#1e40af;">
+                        Итого баллов дисциплины: <span id="discipline_total_display">0</span> из 100
+                    </div>
+                </div>
+            </details>
 
             <small id="bonus_hint" style="display:block; margin-top:10px; color:#f39c12; font-weight:bold;">
                 Итоговый бонус: 0%
@@ -406,6 +408,28 @@
         document.getElementById('bonus_hint').textContent = 'Итоговый бонус: 0%';
         document.getElementById('norm_hint').textContent = 'Норма: 0 кг | Выполнено: 0%';
         document.getElementById('calc_hint').textContent = '0 шт × 0 кг = 0 кг';
+        
+        // Автоматический подсчет итога дисциплины
+        const disciplineSelects = document.querySelectorAll('select[name^="sanitation"], select[name^="technology"], select[name^="quality"], select[name^="discipline"], select[name^="equipment"]');
+        const totalDisplay = document.getElementById('discipline_total_display');
+        const totalInput = document.querySelector('input[name="discipline_total"]') || document.createElement('input');
+        totalInput.type = 'hidden';
+        totalInput.name = 'discipline_total';
+        document.querySelector('form').appendChild(totalInput);
+
+        function updateDisciplineTotal() {
+            let sum = 0;
+            disciplineSelects.forEach(select => {
+                sum += parseInt(select.value) || 0;
+            });
+            totalDisplay.textContent = sum;
+            totalInput.value = sum;
+        }
+
+        disciplineSelects.forEach(select => {
+            select.addEventListener('change', updateDisciplineTotal);
+        });
+        updateDisciplineTotal();
         document.getElementById('salary_hint').textContent = 'З/п за смену: 0 сум | Бонус: 20%';
     {% endif %}
     </script>
