@@ -404,154 +404,38 @@
             document.querySelector(`select[name="caliber${i}"]`).value = '';
         }
         
-        // Очищаем подсказки
-        document.getElementById('bonus_hint').textContent = 'Итоговый бонус: 0%';
-        document.getElementById('norm_hint').textContent = 'Норма: 0 кг | Выполнено: 0%';
-        document.getElementById('calc_hint').textContent = '0 шт × 0 кг = 0 кг';
-        
-        // Автоматический подсчет итога дисциплины
-        const disciplineSelects = document.querySelectorAll('select[name^="sanitation"], select[name^="technology"], select[name^="quality"], select[name^="discipline"], select[name^="equipment"]');
-        const totalDisplay = document.getElementById('discipline_total_display');
-        const totalInput = document.querySelector('input[name="discipline_total"]') || document.createElement('input');
-        totalInput.type = 'hidden';
-        totalInput.name = 'discipline_total';
-        document.querySelector('form').appendChild(totalInput);
-
-        function updateDisciplineTotal() {
-            let sum = 0;
             disciplineSelects.forEach(select => {
-                sum += parseInt(select.value) || 0;
+                select.addEventListener('change', updateDisciplineTotal);
             });
-            totalDisplay.textContent = sum;
-            totalInput.value = sum;
-        console.log('selectedGroup:', selectedGroup);
+            updateDisciplineTotal();
+            document.getElementById('salary_hint').textContent = 'З/п за смену: 0 сум | Бонус: 20%';
+        {% endif %}
 
-        productSelect.innerHTML = '<option value="">Выберите ассортимент...</option>';
-        
-        if (selectedGroup && productsByGroup[selectedGroup]) {
-            console.log('Products for group:', productsByGroup[selectedGroup]);
-            productsByGroup[selectedGroup].forEach(item => {
-                const option = document.createElement('option');
-                option.value = item;
-                option.textContent = item;
-                productSelect.appendChild(option);
-            });
-        } else {
-            console.log('No products found for group:', selectedGroup);
+        // Функция для отображения информации о выбранном работнике
+        function updateWorkerInfo() {
+            const select = document.querySelector('select[name="fio"]');
+            const selected = select.options[select.selectedIndex];
+            const infoDiv = document.getElementById('worker_info') || document.createElement('div');
+            infoDiv.id = 'worker_info';
+            infoDiv.style.marginTop = '8px';
+            infoDiv.style.color = '#1e40af';
+            infoDiv.style.fontWeight = '600';
+            select.parentNode.appendChild(infoDiv);
+
+            if (selected.value) {
+                infoDiv.innerHTML = `Выбран: ${selected.text}`;
+            } else {
+                infoDiv.innerHTML = '';
+            }
         }
-    }
 
-    // Функция для обновления всех расчётов
-    function updateAllCalcs() {
-        let totalQty = 0;
-        let totalWeight = 0;
-        
-        for (let i = 1; i <= 3; i++) {
-            const qty = parseFloat(document.querySelector(`input[name="quantity${i}"]`).value) || 0;
-            const kg = parseFloat(document.querySelector(`select[name="caliber${i}"]`).value) || 0;
-            totalQty += qty;
-            totalWeight += qty * kg;
-        }
-        
-        document.getElementById('calc_hint').textContent = 
-            totalQty + ' шт × ' + (totalWeight/totalQty).toFixed(1) + ' кг = ' + totalWeight.toFixed(1) + ' кг';
-        
-        updateSalary();
-        updateNorm();
-    }
-
-    // Сегодняшняя дата
-    document.getElementById('date').valueAsDate = new Date();
-
-    // Привязываем события для всех полей чек-листа
-    document.getElementById('sanitation').addEventListener('change', updateBonus);
-    document.getElementById('technology').addEventListener('change', updateBonus);
-    document.getElementById('quality').addEventListener('change', updateBonus);
-    document.getElementById('discipline').addEventListener('change', updateBonus);
-    document.getElementById('equipment').addEventListener('change', updateBonus);
-
-    // Привязываем события для всех блоков товаров
-    for (let i = 1; i <= 3; i++) {
-        const qtyInput = document.querySelector(`input[name="quantity${i}"]`);
-        const calSelect = document.querySelector(`select[name="caliber${i}"]`);
-        const groupSelect = document.querySelector(`select[name="group${i}"]`);
-        
-        if (qtyInput) qtyInput.addEventListener('input', updateAllCalcs);
-        if (calSelect) calSelect.addEventListener('change', updateAllCalcs);
-        if (groupSelect) groupSelect.addEventListener('change', function() {
-            updateProduct(i);
+        // Привязываем событие к select работников
+        document.addEventListener('DOMContentLoaded', function() {
+            const fioSelect = document.querySelector('select[name="fio"]');
+            if (fioSelect) {
+                fioSelect.addEventListener('change', updateWorkerInfo);
+            }
         });
-    }
-
-    // Запуск расчётов при загрузке
-    updateAllCalcs();
-    updateBonus(); // при загрузке
-    updateNorm(); // при загрузке
-
-    // Очистка полей товара после успешного добавления
-    {% if success %}
-        // Очищаем только поля товара для всех 3 блоков
-        for (let i = 1; i <= 3; i++) {
-            document.querySelector(`select[name="group${i}"]`).value = '';
-            document.querySelector(`select[name="product${i}"]`).innerHTML = '<option value="">Выберите ассортимент...</option>';
-            document.querySelector(`input[name="quantity${i}"]`).value = '';
-            document.querySelector(`select[name="caliber${i}"]`).value = '';
-        }
-        
-        // Очищаем подсказки
-        document.getElementById('bonus_hint').textContent = 'Итоговый бонус: 0%';
-        document.getElementById('norm_hint').textContent = 'Норма: 0 кг | Выполнено: 0%';
-        document.getElementById('calc_hint').textContent = '0 шт × 0 кг = 0 кг';
-        
-        // Автоматический подсчет итога дисциплины
-        const disciplineSelects = document.querySelectorAll('select[name^="sanitation"], select[name^="technology"], select[name^="quality"], select[name^="discipline"], select[name^="equipment"]');
-        const totalDisplay = document.getElementById('discipline_total_display');
-        const totalInput = document.querySelector('input[name="discipline_total"]') || document.createElement('input');
-        totalInput.type = 'hidden';
-        totalInput.name = 'discipline_total';
-        document.querySelector('form').appendChild(totalInput);
-
-        function updateDisciplineTotal() {
-            let sum = 0;
-            disciplineSelects.forEach(select => {
-                sum += parseInt(select.value) || 0;
-            });
-            totalDisplay.textContent = sum;
-            totalInput.value = sum;
-        }
-
-        disciplineSelects.forEach(select => {
-            select.addEventListener('change', updateDisciplineTotal);
-        });
-        updateDisciplineTotal();
-        document.getElementById('salary_hint').textContent = 'З/п за смену: 0 сум | Бонус: 20%';
-    {% endif %}
-
-    // Функция для отображения информации о выбранном работнике
-    function updateWorkerInfo() {
-        const select = document.querySelector('select[name="fio"]');
-        const selected = select.options[select.selectedIndex];
-        const infoDiv = document.getElementById('worker_info') || document.createElement('div');
-        infoDiv.id = 'worker_info';
-        infoDiv.style.marginTop = '8px';
-        infoDiv.style.color = '#1e40af';
-        infoDiv.style.fontWeight = '600';
-        select.parentNode.appendChild(infoDiv);
-
-        if (selected.value) {
-            infoDiv.innerHTML = `Выбран: ${selected.text}`;
-        } else {
-            infoDiv.innerHTML = '';
-        }
-    }
-
-    // Привязываем событие к select работников
-    document.addEventListener('DOMContentLoaded', function() {
-        const fioSelect = document.querySelector('select[name="fio"]');
-        if (fioSelect) {
-            fioSelect.addEventListener('change', updateWorkerInfo);
-        }
-    });
-</script>
-</body>
-</html>
+    </script>
+    </body>
+    </html>
