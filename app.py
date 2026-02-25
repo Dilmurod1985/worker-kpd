@@ -7,7 +7,7 @@ from openpyxl.styles import Font, Alignment
 import io
 from datetime import datetime
 from collections import defaultdict
-from database import init_db, add_record, get_all_records, get_records_by_date
+from database import init_db, add_record, get_all_records, get_records_by_date, update_record, get_record_by_id
 
 app = Flask(__name__)
 
@@ -474,6 +474,49 @@ def update_date(record_id):
     conn.close()
     
     return jsonify({'success': True})
+
+
+@app.route('/edit/<int:record_id>', methods=['GET', 'POST'])
+def edit_record(record_id):
+    if request.method == 'POST':
+        # Обновляем запись
+        record = {
+            'date': request.form.get('date'),
+            'worker_id': request.form.get('worker_id'),
+            'fio': request.form.get('fio'),
+            'otdel': request.form.get('otdel'),
+            'product': request.form.get('product'),
+            'category': request.form.get('category'),
+            'quantity_pieces': float(request.form.get('quantity_pieces', 0)),
+            'caliber_kg': float(request.form.get('caliber_kg', 0)),
+            'quantity_kg': float(request.form.get('quantity_kg', 0)),
+            'salary_coeff': float(request.form.get('salary_coeff', 1.0)),
+            'daily_salary': int(request.form.get('daily_salary', 0)),
+            'full_salary': int(request.form.get('full_salary', 0)),
+            'reduced_amount': int(request.form.get('reduced_amount', 0)),
+            'percent_complete': float(request.form.get('percent_complete', 0)),
+            'total_points': int(request.form.get('total_points', 0)),
+            'bonus_percent': int(request.form.get('bonus_percent', 0)),
+            'source': request.form.get('source', 'Вручную'),
+            'discipline_total': int(request.form.get('discipline_total', 0))
+        }
+        
+        update_record(record_id, record)
+        return redirect('/tabel')
+    
+    # GET - показываем форму с текущими данными
+    record = get_record_by_id(record_id)
+    if not record:
+        return "Запись не найдена", 404
+    
+    return render_template("edit.html", 
+                          record=record,
+                          workers=WORKERS_TABLE,
+                          groups=GROUPS_LIST,
+                          products_by_group=PRODUCT_GROUPS,
+                          caliber_options=CALIBER_OPTIONS_KG,
+                          daily_rates=DAILY_RATES,
+                          kg_norms=KG_NORMS)
 
 
 @app.route("/tabel")

@@ -6,6 +6,8 @@ DB_FILE = "production.db"
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
+    
+    # Создаем таблицу если не существует
     c.execute('''CREATE TABLE IF NOT EXISTS records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT,
@@ -24,11 +26,10 @@ def init_db():
         percent_complete REAL,
         total_points INTEGER,
         bonus_percent INTEGER,
-        discipline_total INTEGER DEFAULT 0,
         source TEXT DEFAULT 'Вручную'
     )''')
     
-    # Добавляем колонку discipline_total если таблица уже существует
+    # Безопасно добавляем колонку discipline_total если она не существует
     try:
         c.execute("ALTER TABLE records ADD COLUMN discipline_total INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
@@ -76,6 +77,46 @@ def add_record(record):
     conn.commit()
     conn.close()
 
+def update_record(record_id, record):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    values_tuple = (
+        record['date'],
+        record['worker_id'],
+        record['fio'],
+        record['otdel'],
+        record['product'],
+        record['category'],
+        record.get('quantity_pieces', 0),
+        record.get('caliber_kg', 0),
+        record['quantity_kg'],
+        record.get('salary_coeff', 1.0),
+        record['daily_salary'],
+        record['full_salary'],
+        record.get('reduced_amount', 0),
+        record.get('percent_complete', 0),
+        record.get('total_points', 0),
+        record.get('bonus_percent', 0),
+        record.get('source', 'Вручную'),
+        record.get('discipline_total', 0),
+        record_id
+    )
+    
+    print("DEBUG: обновление кортежа значений:", len(values_tuple))
+    print("DEBUG: discipline_total пришёл:", record.get('discipline_total', 'НЕТ КЛЮЧА'))
+    
+    c.execute('''UPDATE records SET 
+        date = ?, worker_id = ?, fio = ?, otdel = ?, product = ?, category = ?,
+        quantity_pieces = ?, caliber_kg = ?, quantity_kg = ?,
+        salary_coeff = ?, daily_salary = ?, full_salary = ?, reduced_amount = ?,
+        percent_complete = ?, total_points = ?, bonus_percent = ?,
+        source = ?, discipline_total = ?
+        WHERE id = ?''', values_tuple)
+    
+    conn.commit()
+    conn.close()
+
 def get_all_records():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -93,3 +134,15 @@ def get_records_by_date(target_date):
     conn.close()
     columns = [desc[0] for desc in c.description]
     return [dict(zip(columns, row)) for row in rows]
+
+def get_record_by_id(record_id):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT * FROM records WHERE id = ?", (record_id,))
+    row = c.fetchone()
+    conn.close()
+    
+    if row:
+        columns = [desc[0] for desc in c.description]
+        return dict(zip(columns, row))
+    return None

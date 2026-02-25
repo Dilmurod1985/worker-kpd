@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактирование записи</title>
+    <style>
+        body { font-family: Arial; background: #e0f7fa; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #00695c; }
+        label { font-weight: 600; color: #1f2937; margin-bottom: 6px; display: block; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #b2dfdb; border-radius: 6px; box-sizing: border-box; }
+        button { background: #f59e0b; color: white; padding: 14px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1.1em; }
+        button:hover { background: #d97706; }
+        .success { background: #c8e6c9; color: #1b5e20; padding: 15px; margin: 15px 0; border-radius: 6px; text-align: center; }
+        .error { background: #ffcdd2; color: #b71c1c; padding: 15px; margin: 15px 0; border-radius: 6px; text-align: center; }
+        .back { text-align: center; margin-top: 20px; }
+        .back a { color: #00695c; text-decoration: none; font-weight: bold; }
+        .form-group { margin-bottom: 24px; }
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            label { font-size: 16px; }
+            input, select { padding: 10px; }
+            button { padding: 12px; font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Редактирование записи #{{ record.id }}</h1>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="worker_id">ID работника</label>
+                <input type="text" id="worker_id" name="worker_id" value="{{ record.worker_id }}" required>
+                <div id="id_error" style="color:red; display:none;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="otdel_display">Отдел</label>
+                <input type="text" id="otdel_display" readonly style="background:#f0f0f0; color:#333; width:100%; padding:12px; font-size:18px; margin-bottom:10px;" value="{{ record.otdel }}">
+            </div>
+
+            <div class="form-group">
+                <label for="fio">ФИО работника</label>
+                <select name="fio" id="fio" required>
+                    <option value="">Выберите...</option>
+                    {% for w in workers %}
+                        <option value="{{ w.fio }}" data-id="{{ w.id | string }}" data-category="{{ w.category }}" data-otdel="{{ w.otdel }}" {% if w.fio == record.fio %}selected{% endif %}>{{ w.fio }} ({{ w.category }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Дата</label>
+                <input type="date" name="date" id="date" value="{{ record.date }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="product">Товар</label>
+                <input type="text" name="product" id="product" value="{{ record.product }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Категория</label>
+                <input type="text" name="category" id="category" value="{{ record.category }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="quantity_pieces">Количество (шт)</label>
+                <input type="number" name="quantity_pieces" id="quantity_pieces" value="{{ record.quantity_pieces }}" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="caliber_kg">Калибр (кг)</label>
+                <select name="caliber_kg" id="caliber_kg" required>
+                    {% for kg in caliber_options %}
+                        <option value="{{ kg }}" {% if kg == record.caliber_kg %}selected{% endif %}>{{ kg }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="quantity_kg">Общий вес (кг)</label>
+                <input type="number" name="quantity_kg" id="quantity_kg" value="{{ record.quantity_kg }}" step="0.01" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="salary_coeff">Коэффициент</label>
+                <input type="number" name="salary_coeff" id="salary_coeff" value="{{ record.salary_coeff }}" step="0.01" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="daily_salary">З/П за смену</label>
+                <input type="number" name="daily_salary" id="daily_salary" value="{{ record.daily_salary }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="full_salary">Полная з/П</label>
+                <input type="number" name="full_salary" id="full_salary" value="{{ record.full_salary }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="reduced_amount">Урезано</label>
+                <input type="number" name="reduced_amount" id="reduced_amount" value="{{ record.reduced_amount }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="bonus_percent">Бонус %</label>
+                <input type="number" name="bonus_percent" id="bonus_percent" value="{{ record.bonus_percent }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="norm_kg">Норма (кг)</label>
+                <input type="number" name="norm_kg" id="norm_kg" value="{{ record.norm_kg }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="percent_complete">Выполнено %</label>
+                <input type="number" name="percent_complete" id="percent_complete" value="{{ record.percent_complete }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="total_points">Общие баллы</label>
+                <input type="number" name="total_points" id="total_points" value="{{ record.total_points }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <div class="form-group">
+                <label for="discipline_total">Баллы дисциплины</label>
+                <input type="number" name="discipline_total" id="discipline_total" value="{{ record.discipline_total }}" readonly style="background:#f0f0f0;">
+            </div>
+
+            <button type="submit">Сохранить изменения</button>
+        </form>
+
+        <div class="back">
+            <a href="/tabel">← Вернуться к табелю</a>
+        </div>
+    </div>
+</body>
+</html>
