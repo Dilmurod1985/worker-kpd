@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление персоналом</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #7209b7;
+            --bg: #f8f9fa;
+            --text: #2b2d42;
+            --white: #ffffff;
+        }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        /* Карточка загрузки */
+        .card { 
+            background: var(--white); padding: 25px; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px;
+        }
+        h2 { margin-top: 0; color: var(--primary); font-size: 24px; }
+        
+        textarea {
+            width: 100%; border: 2px solid #edf2f4; border-radius: 10px; 
+            padding: 12px; font-size: 14px; transition: 0.3s; margin-bottom: 15px;
+            font-family: monospace;
+        }
+        textarea:focus { border-color: var(--primary); outline: none; }
+        
+        .btn-upload {
+            background: var(--primary); color: white; border: none; padding: 12px 25px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        .btn-upload:hover { background: var(--secondary); transform: translateY(-1px); }
+
+        /* Таблица сотрудников */
+        table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        th { background: #f1f5f9; color: #64748b; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; }
+        tr:hover { background-color: #f8faff; }
+
+        .id-badge { background: #eef2ff; color: var(--primary); font-weight: bold; padding: 4px 10px; border-radius: 6px; }
+        .salary { font-weight: 700; color: #2d6a4f; }
+        
+        .btn-delete {
+            color: #e71d36; text-decoration: none; font-size: 13px; font-weight: bold;
+            padding: 5px 10px; border: 1px solid #ffccd5; border-radius: 5px; transition: 0.3s;
+        }
+        .btn-delete:hover { background: #fff5f5; border-color: #e71d36; }
+
+        .footer-link { display: block; text-align: center; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>👥 Добавить сотрудников</h2>
+            <form action="/workers" method="POST">
+                <textarea name="bulk_workers" rows="5" placeholder="Вставь из Excel: ID  ФИО  Категория  Оклад"></textarea>
+                <div style="text-align: right;">
+                    <button type="submit" class="btn-upload">🚀 Загрузить список</button>
+                </div>
+            </form>
+        </div>
+
+        <h2>📋 Список персонала</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ФИО</th>
+                    <th>Кат.</th>
+                    <th>Оклад</th>
+                    <th style="text-align: center;">Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in workers %}
+                <tr>
+                    <td><span class="id-badge">{{ w.worker_id }}</span></td>
+                    <td style="font-weight: 500;">{{ w.fio }}</td>
+                    <td>{{ w.category }}</td>
+                    <td class="salary">{{ w.salary_base }}</td>
+                    <td style="text-align: center;">
+                        <a href="#" class="btn-delete">Удалить</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a href="/" class="footer-link">← На главную панель</a>
+    </div>
+</body>
+</html>

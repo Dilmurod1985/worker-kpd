@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель управления КПД</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --success: #2ec4b6;
+            --danger: #e71d36;
+            --bg: #f8f9fa;
+            --text: #2b2d42;
+        }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Карточка ввода */
+        .card { 
+            background: white; padding: 25px; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px;
+        }
+        h2 { margin-top: 0; color: var(--primary); font-weight: 600; }
+        
+        input[type="date"], textarea {
+            width: 100%; border: 2px solid #edf2f4; border-radius: 10px; 
+            padding: 12px; margin-top: 8px; font-size: 15px; transition: 0.3s;
+        }
+        textarea:focus { border-color: var(--primary); outline: none; }
+        
+        .btn-main {
+            background: var(--primary); color: white; border: none; padding: 12px 30px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 15px;
+            transition: 0.3s; box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4); }
+
+        .btn-excel {
+            background: var(--success); color: white; text-decoration: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; float: right; margin-bottom: 15px;
+        }
+
+        /* Таблица */
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        th { background: #f1f5f9; color: #64748b; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; padding: 15px; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        tr:hover { background-color: #f8faff; }
+
+        .badge-ok { color: var(--success); font-weight: bold; background: #e6fffa; padding: 5px 10px; border-radius: 6px; }
+        .badge-bad { color: var(--danger); font-weight: bold; background: #fff5f5; padding: 5px 10px; border-radius: 6px; }
+        .sum-kg { font-weight: 800; color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="card" style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; align-items: center;">
+    <div>
+        <strong>🔎 Поиск:</strong> 
+        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Введите ID или имя..." style="width: 200px; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
+    </div>
+    <div>
+        <strong>📅 С даты:</strong> <input type="date" id="dateFrom" onchange="filterTable()" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
+        <strong>По:</strong> <input type="date" id="dateTo" onchange="filterTable()" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
+    </div>
+    <button onclick="resetFilters()" style="padding: 8px 15px; border-radius: 8px; border: none; background: #94a3b8; color: white; cursor: pointer;">Сбросить</button>
+</div>
+
+<script>
+function filterTable() {
+    let input = document.getElementById("searchInput").value.toUpperCase();
+    let dateFrom = document.getElementById("dateFrom").value;
+    let dateTo = document.getElementById("dateTo").value;
+    let tr = document.querySelectorAll("tbody tr");
+
+    tr.forEach(row => {
+        let idText = row.cells[1].textContent.toUpperCase();
+        let nameText = row.cells[2].textContent.toUpperCase();
+        let dateText = row.cells[0].textContent; // Дата в формате YYYY-MM-DD
+
+        let matchesSearch = idText.includes(input) || nameText.includes(input);
+        let matchesDate = true;
+
+        if (dateFrom && dateText < dateFrom) matchesDate = false;
+        if (dateTo && dateText > dateTo) matchesDate = false;
+
+        if (matchesSearch && matchesDate) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+
+function resetFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("dateFrom").value = "";
+    document.getElementById("dateTo").value = "";
+    filterTable();
+}
+</script>
+    <div class="container">
+        <div class="card">
+            <h2>📦 Ввод отчета за смену</h2>
+            <form action="/bulk_input" method="POST">
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px;">
+                    <label><strong>Дата смены:</strong> 
+                        <input type="date" name="date" required style="width: auto;">
+                    </label>
+                </div>
+                <textarea name="bulk_data" rows="5" placeholder="Пример: 10 Qiyma 300 50 6 Ночь"></textarea>
+                <div style="text-align: right;">
+                    <button type="submit" class="btn-main">💾 Сохранить данные</button>
+                </div>
+            </form>
+        </div>
+
+        <div style="overflow: hidden;">
+            <h2 style="display: inline-block;">📊 Сводный отчет</h2>
+            <a href="/export_excel" class="btn-excel">📥 Экспорт в Excel</a>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>ID</th>
+                    <th>Сотрудник</th>
+                    <th>Кат.</th>
+                    <th>Позиция</th>
+                    <th>Калибр</th>
+                    <th>Шт</th>
+                    <th>Сумма (кг)</th>
+                    <th>Норма</th>
+                    <th>Успех (%)</th>
+                    <th>Смена</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in summary %}
+                <tr>
+                    <td style="color: #94a3b8; font-size: 13px;">{{ s.date }}</td>
+                    <td style="font-weight: 600;">{{ s.id }}</td>
+                    <td style="text-align: left; font-weight: 500;">{{ s.fio }}</td>
+                    <td><span style="background: #f1f5f9; padding: 3px 8px; border-radius: 4px;">{{ s.cat }}</span></td>
+                    <td>{{ s.pos }}</td>
+                    <td>{{ s.kalibr }}</td>
+                    <td>{{ s.sht }}</td>
+                    <td class="sum-kg">{{ s.summa }}</td>
+                    <td style="color: #94a3b8;">{{ s.norma }}</td>
+                    <td>
+                        <span class="{{ 'badge-ok' if s.percent >= 100 else 'badge-bad' }}">
+                            {{ s.percent }}%
+                        </span>
+                    </td>
+                    <td>{{ s.shift }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="text-align: center; margin-top: 40px; padding-bottom: 40px;">
+            <a href="/" style="color: var(--primary); text-decoration: none; font-weight: bold; border-bottom: 2px solid;">← На главную панель</a>
+        </div>
+    </div>
+</body>
+</html>
