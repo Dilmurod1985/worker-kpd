@@ -10,26 +10,27 @@ app.secret_key = "dilmurat_group_system_2026"
 # Определяем путь к папке проекта
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# === КОНФИГУРАЦИЯ БАЗЫ ДАННЫХ ===
+# === УЛЬТРА-СТАБИЛЬНЫЙ БЛОК БАЗЫ ДАННЫХ ===
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # Исправляем протокол для SQLAlchemy 
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    # ПРИНУДИТЕЛЬНЫЙ SSL (Это решит твою ошибку)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "connect_args": {
-            "sslmode": "require"
+            "sslmode": "require",
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
         },
         "pool_pre_ping": True,
+        "pool_recycle": 300,
     }
 else:
-    # Локальная база, если URL не найден
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
