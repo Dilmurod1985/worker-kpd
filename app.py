@@ -31,6 +31,7 @@ if database_url:
     }
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -136,6 +137,47 @@ def tabel():
         })
     rows.sort(key=lambda x: x['percent'])
     return render_template('tabel.html', summary=rows)
+
+# --- НОВАЯ ФУНКЦИЯ ЭКСПОРТА ---
+@app.route('/export_excel')
+def export_excel():
+    records = Record.query.all()
+    norms = {"1": 300, "2": 280, "3": 250, "4": 220, "5": 100}
+    
+    data_for_excel = []
+    for r in records:
+        w = Worker.query.filter_by(worker_id=r.worker_id).first()
+        cat_num = "".join(filter(str.isdigit, w.category)) if w else "5"
+        norm_val = norms.get(cat_num, 100)
+        percent = (r.total_kpd / norm_val * 100) if norm_val > 0 else 0
+        
+        data_for_excel.append({
+            'Дата': r.date,
+            'ID': r.worker_id,
+            'ФИО': w.fio if w else "-",
+            'Категория': w.category if w else "-",
+            'Отдел': r.otdel,
+            'КПД': r.total_kpd,
+            'Норма': norm_val,
+            '% Выполнения': round(percent, 1),
+            'Смена': r.shift
+        })
+
+    if not data_for_excel:
+        return "Нет данных для экспорта", 404
+
+    df = pd.DataFrame(data_for_excel)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='KPD_Report')
+    
+    output.seek(0)
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'KPD_Report_{pd.Timestamp.now().strftime("%Y-%m-%d")}.xlsx'
+    )
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
