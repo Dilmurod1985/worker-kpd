@@ -7,16 +7,27 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.secret_key = "dilmurat_group_system_2026"
 
-# === УНИВЕРСАЛЬНЫЙ БЛОК БАЗЫ ДАННЫХ ===
-# Если на Render есть DATABASE_URL, используем PostgreSQL. Если нет (на ПК) — SQLite.
-database_url = os.environ.get('DATABASE_URL')
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
+# ОПРЕДЕЛЯЕМ ПАПКУ ПРОЕКТА
+basedir = os.path.abspath(os.path.dirname(__file__))
 
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'production.db')
+# === БЛОК БАЗЫ ДАННЫХ ===
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url:
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": {"sslmode": "require"},
+        "pool_pre_ping": True,
+    }
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-# ======================================
+# ========================
 
 class Worker(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,13 +46,11 @@ class Record(db.Model):
     sht = db.Column(db.Float)
     shift = db.Column(db.String(20))
 
-# Создаем таблицы автоматически
 with app.app_context():
     db.create_all()
 
 @app.route('/')
-def index(): 
-    return render_template('index.html')
+def index(): return render_template('index.html')
 
 @app.route('/workers', methods=['GET', 'POST'])
 def workers():
@@ -88,7 +97,6 @@ def bulk_input():
 def tabel():
     records = Record.query.all()
     norms = {"1": 300, "2": 280, "3": 250, "4": 220, "5": 100}
-    
     grouped = {}
     for r in records:
         key = (r.date, r.shift, r.worker_id)
@@ -102,14 +110,12 @@ def tabel():
                 grouped[key]['pos'].append(r.otdel)
             grouped[key]['summa'] += r.total_kpd
             grouped[key]['sht'] += r.sht
-
     rows = []
     for data in grouped.values():
         w = Worker.query.filter_by(worker_id=data['id']).first()
         cat_num = "".join(filter(str.isdigit, w.category)) if w else "5"
         norm_val = norms.get(cat_num, 100)
         percent = (data['summa'] / norm_val * 100) if norm_val > 0 else 0
-        
         rows.append({
             'date': data['date'], 'id': data['id'], 'fio': w.fio if w else "-",
             'cat': w.category if w else "-", 
@@ -117,15 +123,12 @@ def tabel():
             'kalibr': data['kalibr'], 'sht': data['sht'], 'summa': round(data['summa'], 2),
             'norma': norm_val, 'percent': round(percent, 1), 'shift': data['shift']
         })
-    
     rows.sort(key=lambda x: x['percent'])
     return render_template('tabel.html', summary=rows)
 
 @app.route('/export_excel')
-def export_excel():
-    # Простая реализация экспорта
-    return "Функция экспорта в разработке"
+def export_excel(): return "Экспорт временно недоступен"
 
 if __name__ == '__main__':
-    # На локальном ПК используем порт 5000
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
