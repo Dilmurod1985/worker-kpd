@@ -12,9 +12,8 @@
             --text: #2b2d42;
         }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { max-width: 1300px; margin: 0 auto; } /* Увеличил ширину для новой колонки */
         
-        /* Карточка ввода */
         .card { 
             background: white; padding: 25px; border-radius: 15px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px;
@@ -32,17 +31,22 @@
             border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 15px;
             transition: 0.3s; box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
         }
-        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4); }
+        .btn-main:hover { transform: translateY(-2px); }
 
         .btn-excel {
             background: var(--success); color: white; text-decoration: none; padding: 10px 20px;
             border-radius: 8px; font-weight: bold; float: right; margin-bottom: 15px;
         }
 
-        /* Таблица */
+        .btn-delete {
+            background: var(--danger); color: white; text-decoration: none; padding: 5px 10px;
+            border-radius: 6px; font-size: 12px; font-weight: bold; transition: 0.3s;
+        }
+        .btn-delete:hover { opacity: 0.8; }
+
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
-        th { background: #f1f5f9; color: #64748b; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; padding: 15px; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        th { background: #f1f5f9; color: #64748b; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; padding: 15px; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; }
         tr:hover { background-color: #f8faff; }
 
         .badge-ok { color: var(--success); font-weight: bold; background: #e6fffa; padding: 5px 10px; border-radius: 6px; }
@@ -51,51 +55,7 @@
     </style>
 </head>
 <body>
-    <div class="card" style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; align-items: center;">
-    <div>
-        <strong>🔎 Поиск:</strong> 
-        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Введите ID или имя..." style="width: 200px; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
-    </div>
-    <div>
-        <strong>📅 С даты:</strong> <input type="date" id="dateFrom" onchange="filterTable()" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
-        <strong>По:</strong> <input type="date" id="dateTo" onchange="filterTable()" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
-    </div>
-    <button onclick="resetFilters()" style="padding: 8px 15px; border-radius: 8px; border: none; background: #94a3b8; color: white; cursor: pointer;">Сбросить</button>
-</div>
-
-<script>
-function filterTable() {
-    let input = document.getElementById("searchInput").value.toUpperCase();
-    let dateFrom = document.getElementById("dateFrom").value;
-    let dateTo = document.getElementById("dateTo").value;
-    let tr = document.querySelectorAll("tbody tr");
-
-    tr.forEach(row => {
-        let idText = row.cells[1].textContent.toUpperCase();
-        let nameText = row.cells[2].textContent.toUpperCase();
-        let dateText = row.cells[0].textContent; // Дата в формате YYYY-MM-DD
-
-        let matchesSearch = idText.includes(input) || nameText.includes(input);
-        let matchesDate = true;
-
-        if (dateFrom && dateText < dateFrom) matchesDate = false;
-        if (dateTo && dateText > dateTo) matchesDate = false;
-
-        if (matchesSearch && matchesDate) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
-        }
-    });
-}
-
-function resetFilters() {
-    document.getElementById("searchInput").value = "";
-    document.getElementById("dateFrom").value = "";
-    document.getElementById("dateTo").value = "";
-    filterTable();
-}
-</script>
+    
     <div class="container">
         <div class="card">
             <h2>📦 Ввод отчета за смену</h2>
@@ -131,7 +91,7 @@ function resetFilters() {
                     <th>Норма</th>
                     <th>Успех (%)</th>
                     <th>Смена</th>
-                </tr>
+                    <th>Действие</th> </tr>
             </thead>
             <tbody>
                 {% for s in summary %}
@@ -151,6 +111,11 @@ function resetFilters() {
                         </span>
                     </td>
                     <td>{{ s.shift }}</td>
+                    <td>
+                        <a href="{{ url_for('delete_record', id=s.db_id) }}" 
+                           class="btn-delete" 
+                           onclick="return confirm('Удалить эту запись?')">❌</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
