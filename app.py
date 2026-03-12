@@ -30,9 +30,6 @@ else:
 
 db = SQLAlchemy(app)
 
-# ВОТ ЭТОЙ СТРОКИ НЕ ХВАТАЛО:
-db = SQLAlchemy(app)
-
 # === МОДЕЛИ ===
 class Worker(db.Model):
     id = db.Column(db.Integer, primary_key=True)
