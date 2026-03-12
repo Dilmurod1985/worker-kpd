@@ -12,22 +12,22 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # 1. Исправляем протокол
+    # Исправляем старый протокол postgres на новый postgresql
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     
-    # 2. Настраиваем SSL через параметры движка
+    # Эти настройки помогут поддерживать соединение живым
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        "connect_args": {
-            "sslmode": "require" # Этого достаточно для Render
-        },
         "pool_pre_ping": True,
+        "pool_recycle": 300,
     }
 else:
+    # Локальная база для тестов
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
 
+# ТОЛЬКО ОДИН РАЗ СОЗДАЕМ ОБЪЕКТ DB
 db = SQLAlchemy(app)
 
 # === МОДЕЛИ ===
