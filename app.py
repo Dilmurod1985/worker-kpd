@@ -8,26 +8,30 @@ app = Flask(__name__)
 app.secret_key = "dilmurat_group_system_2026"
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# === БАЗА ДАННЫХ ===
+# === КОНФИГУРАЦИЯ БАЗЫ ДАННЫХ ===
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # Исправляем старый протокол postgres на новый postgresql
+    # Исправляем протокол для SQLAlchemy 1.4+
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     
-    # Эти настройки помогут поддерживать соединение живым
+    # ПРИНУДИТЕЛЬНАЯ НАСТРОЙКА SSL
+    # Это заставит psycopg2 принимать SSL-соединение от Render
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": {
+            "sslmode": "require",
+        },
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
 else:
-    # Локальная база для тестов
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
+    # Локальная база (SQLite)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.db')
 
-# ТОЛЬКО ОДИН РАЗ СОЗДАЕМ ОБЪЕКТ DB
 db = SQLAlchemy(app)
 
 # === МОДЕЛИ ===
