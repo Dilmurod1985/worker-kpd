@@ -11,13 +11,23 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 # === БАЗА ДАННЫХ ===
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
+    # Исправляем протокол для SQLAlchemy 2.0+
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
+    
+    # Принудительно добавляем sslmode в саму строку
+    if "sslmode=" not in database_url:
+        separator = "&" if "?" in database_url else "?"
+        database_url += f"{separator}sslmode=require"
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"connect_args": {"sslmode": "require"}, "pool_pre_ping": True}
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_pre_ping": True,
+    }
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
 
+# ВОТ ЭТОЙ СТРОКИ НЕ ХВАТАЛО:
 db = SQLAlchemy(app)
 
 # === МОДЕЛИ ===
@@ -37,6 +47,7 @@ class Record(db.Model):
     sht = db.Column(db.Float)
     shift = db.Column(db.String(20))
 
+# Создаем таблицы
 with app.app_context():
     db.create_all()
 
