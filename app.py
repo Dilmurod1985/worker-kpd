@@ -10,22 +10,25 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 # === БАЗА ДАННЫХ ===
 database_url = os.environ.get('DATABASE_URL')
+
 if database_url:
-    # Исправляем протокол для SQLAlchemy 2.0+
+    # 1. Исправляем протокол
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
-    # Принудительно добавляем sslmode в саму строку
-    if "sslmode=" not in database_url:
-        separator = "&" if "?" in database_url else "?"
-        database_url += f"{separator}sslmode=require"
-    
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    
+    # 2. Настраиваем SSL через параметры движка
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": {
+            "sslmode": "require" # Этого достаточно для Render
+        },
         "pool_pre_ping": True,
     }
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
+
+db = SQLAlchemy(app)
 
 # ВОТ ЭТОЙ СТРОКИ НЕ ХВАТАЛО:
 db = SQLAlchemy(app)
