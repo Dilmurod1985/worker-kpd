@@ -21,6 +21,25 @@
         .badge-bad { background-color: #fff5f5; color: #e71d36; font-weight: bold; padding: 6px 10px; border-radius: 8px; }
         .btn-excel { background-color: #1d6f42; color: white; }
         .btn-excel:hover { background-color: #145a35; color: white; }
+        .summary-cards { display: flex; gap: 1rem; }
+        .summary-cards .card { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .summary-cards .card:first-child { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .summary-cards .card:last-child { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        
+        /* Zebra stripes - полосатая таблица */
+        tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        /* Подсветка при наведении */
+        tbody tr:hover {
+            background-color: #e9ecef;
+        }
+        
+        /* Убедимся что low-kpd имеет приоритет над zebra stripes */
+        tbody tr.low-kpd:nth-child(even) {
+            background-color: #ffebee !important;
+        }
     </style>
 </head>
 <body>
@@ -79,6 +98,22 @@
             </div>
         </div>
 
+        <!-- 📊 Итоги по тоннам за сегодня -->
+        <div class="summary-cards mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-white mb-2">🌅 День</h6>
+                    <h4 class="fw-bold text-white">{{ total_day_tons }} т.</h4>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-white mb-2">🌙 Ночь</h6>
+                    <h4 class="fw-bold text-white">{{ total_night_tons }} т.</h4>
+                </div>
+            </div>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover align-middle shadow-sm">
                 <thead>
@@ -95,7 +130,7 @@
                 </thead>
                 <tbody>
                     {% for s in summary %}
-                    <tr>
+                    <tr class="{{ 'low-kpd' if s.percent < 80 else '' }}">
                         <td class="text-muted small">{{ s.date }}</td>
                         <td class="fw-bold text-primary">{{ s.id }}</td>
                         <td>
