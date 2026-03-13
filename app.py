@@ -18,11 +18,13 @@ if database_url:
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     
-    # ПРИНУДИТЕЛЬНАЯ НАСТРОЙКА SSL
-    # Это заставит psycopg2 принимать SSL-соединение от Render
+    # НАСТРОЙКИ ДЛЯ RENDER (PostgreSQL)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "connect_args": {
-            "sslmode": "require",
+            "sslmode": "prefer",  # Меняем require на prefer
+            "sslcert": None,
+            "sslkey": None,
+            "sslrootcert": None
         },
         "pool_pre_ping": True,
         "pool_recycle": 300,
