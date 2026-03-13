@@ -27,17 +27,21 @@
         .summary-cards .card:last-child { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         
         /* Zebra stripes - полосатая таблица */
-        tbody tr:nth-child(even) {
-            background-color: #f2f2f2;
+        .table tbody tr:nth-child(even) {
+            background-color: #f2f2f2 !important;
         }
         
         /* Подсветка при наведении */
-        tbody tr:hover {
-            background-color: #e9ecef;
+        .table tbody tr:hover {
+            background-color: #e9ecef !important;
         }
         
         /* Убедимся что low-kpd имеет приоритет над zebra stripes */
-        tbody tr.low-kpd:nth-child(even) {
+        .table tbody tr.low-kpd:nth-child(even) {
+            background-color: #ffebee !important;
+        }
+        
+        .table tbody tr.low-kpd {
             background-color: #ffebee !important;
         }
     </style>
