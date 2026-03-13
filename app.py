@@ -53,9 +53,10 @@ class Record(db.Model):
     sht = db.Column(db.Float)
     shift = db.Column(db.String(20))
 
-# Создаем таблицы
-with app.app_context():
-    db.create_all()
+# Создаем таблицы только при локальном запуске
+if not database_url:
+    with app.app_context():
+        db.create_all()
 
 # === МАРШРУТЫ ===
 
