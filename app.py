@@ -86,9 +86,19 @@ else:
 
 # === МАРШРУТЫ ===
 
+# Добавляем логирование
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        logger.info("Главная страница загружается")
+        return render_template('index.html')
+    except Exception as e:
+        logger.error(f"Ошибка главной страницы: {e}")
+        return f"Ошибка: {e}", 500
 
 @app.route('/workers', methods=['GET', 'POST'])
 def workers():
@@ -141,68 +151,80 @@ def bulk_input():
 
 @app.route('/tabel')
 def tabel():
-    # Получаем значения из полей поиска
-    search_date = request.args.get('search_date', '')
-    search_id = request.args.get('search_id', '')
+    try:
+        logger.info("Страница табеля загружается")
+        # Получаем значения из полей поиска
+        search_date = request.args.get('search_date', '')
+        search_id = request.args.get('search_id', '')
 
-    records = Record.query.all()
-    norms = {"1": 300, "2": 280, "3": 250, "4": 220, "5": 100}
-    grouped = {}
-
-    for r in records:
-        key = (r.date, r.shift, r.worker_id)
-        if key not in grouped:
-            grouped[key] = {
-                'id_db': r.id, 'date': r.date, 'id': r.worker_id, 'pos': [r.otdel],
-                'kalibr': r.kalibr, 'sht': r.sht, 'summa': r.total_kpd, 'shift': r.shift
-            }
-        else:
-            if r.otdel not in grouped[key]['pos']:
-                grouped[key]['pos'].append(r.otdel)
-            grouped[key]['summa'] += r.total_kpd
-            grouped[key]['sht'] += r.sht
-    
-    rows = []
-    for data in grouped.values():
-        # --- ЛОГИКА ФИЛЬТРАЦИИ ---
-        # Если в поиске что-то есть, и оно не совпадает с данными — пропускаем эту строку
-        if search_date and search_date != data['date']:
-            continue
-        if search_id and search_id != data['id']:
-            continue
-        # ------------------------
-
-        w = Worker.query.filter_by(worker_id=data['id']).first()
-        cat_num = "".join(filter(str.isdigit, w.category)) if w and w.category else "5"
-        norm_val = norms.get(cat_num, 100)
-        percent = (data['summa'] / norm_val * 100) if norm_val > 0 else 0
+        records = Record.query.all()
+        logger.info(f"Найдено записей: {len(records)}")
         
-        rows.append({
-            'db_id': data['id_db'],
-            'date': data['date'],
-            'id': data['id'],
-            'fio': w.fio if w else "-",
-            'cat': w.category if w else "5", 
-            'pos': ", ".join(data['pos']),
-            'kalibr': data['kalibr'], 
-            'sht': data['sht'], 
-            'summa': round(data['summa'], 2),
-            'norma': norm_val, 
-            'percent': round(percent, 1), 
-            'shift': data['shift']
-        })
+        norms = {"1": 300, "2": 280, "3": 250, "4": 220, "5": 100}
+        grouped = {}
 
-    # Сортировка: сначала те, у кого КПД < 80, затем по дате/смене
-    rows.sort(key=lambda x: (x['percent'] >= 80, x['date'], x['shift']), reverse=False)
-    
-    # Подсчет тоннажа по сменам
-    total_day_kg = sum(row['summa'] for row in rows if row['shift'] == 'День')
-    total_night_kg = sum(row['summa'] for row in rows if row['shift'] == 'Ночь')
-    total_day_tons = round(total_day_kg / 1000, 2)
-    total_night_tons = round(total_night_kg / 1000, 2)
+        for r in records:
+            key = (r.date, r.shift, r.worker_id)
+            if key not in grouped:
+                grouped[key] = {
+                    'id_db': r.id, 'date': r.date, 'id': r.worker_id, 'pos': [r.otdel],
+                    'kalibr': r.kalibr, 'sht': r.sht, 'summa': r.total_kpd, 'shift': r.shift
+                }
+            else:
+                if r.otdel not in grouped[key]['pos']:
+                    grouped[key]['pos'].append(r.otdel)
+                grouped[key]['summa'] += r.total_kpd
+                grouped[key]['sht'] += r.sht
+        
+        rows = []
+        for data in grouped.values():
+            # --- ЛОГИКА ФИЛЬТРАЦИИ ---
+            # Если в поиске что-то есть, и оно не совпадает с данными — пропускаем эту строку
+            if search_date and search_date != data['date']:
+                continue
+            if search_id and search_id != data['id']:
+                continue
+            # ------------------------
 
-    return render_template('tabel.html', summary=rows, search_date=search_date, search_id=search_id,
-                         total_day_tons=total_day_tons, total_night_tons=total_night_tons)
+            w = Worker.query.filter_by(worker_id=data['id']).first()
+            if not w:
+                logger.warning(f"Не найден работник с ID: {data['id']}")
+                continue
+                
+            cat_num = "".join(filter(str.isdigit, w.category)) if w and w.category else "5"
+            norm_val = norms.get(cat_num, 100)
+            percent = (data['summa'] / norm_val * 100) if norm_val > 0 else 0
+            
+            rows.append({
+                'db_id': data['id_db'],
+                'date': data['date'],
+                'id': data['id'],
+                'fio': w.fio if w else "-",
+                'cat': w.category if w else "5", 
+                'pos': ", ".join(data['pos']),
+                'kalibr': data['kalibr'], 
+                'sht': data['sht'], 
+                'summa': round(data['summa'], 2),
+                'norma': norm_val, 
+                'percent': round(percent, 1), 
+                'shift': data['shift']
+            })
+
+        # Сортировка: сначала те, у кого КПД < 80, затем по дате/смене
+        rows.sort(key=lambda x: (x['percent'] >= 80, x['date'], x['shift']), reverse=False)
+        
+        # Подсчет тоннажа по сменам
+        total_day_kg = sum(row['summa'] for row in rows if row['shift'] == 'День')
+        total_night_kg = sum(row['summa'] for row in rows if row['shift'] == 'Ночь')
+        total_day_tons = round(total_day_kg / 1000, 2)
+        total_night_tons = round(total_night_kg / 1000, 2)
+
+        logger.info(f"Подготовлено строк для таблицы: {len(rows)}")
+        return render_template('tabel.html', summary=rows, search_date=search_date, search_id=search_id,
+                             total_day_tons=total_day_tons, total_night_tons=total_night_tons)
+    except Exception as e:
+        logger.error(f"Ошибка страницы табеля: {e}")
+        return f"Ошибка: {e}", 500
 
 @app.route('/delete_record/<int:id>')
 def delete_record(id):
