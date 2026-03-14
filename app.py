@@ -54,36 +54,8 @@ class Record(db.Model):
     sht = db.Column(db.Float)
     shift = db.Column(db.String(20))
 
-# Создаем таблицы только при локальном запуске
-if not database_url:
-    with app.app_context():
-        db.create_all()
-else:
-    # На Render проверяем и создаем таблицы если нужно
-    try:
-        with app.app_context():
-            db.create_all()
-    except Exception as e:
-        print(f"Ошибка создания таблиц: {e}")
-    
-    # Проверяем есть ли работники на Render
-    try:
-        with app.app_context():
-            workers_count = Worker.query.count()
-            if workers_count == 0:
-                # Добавляем базовых работников для Render
-                workers = [
-                    Worker(worker_id='5', fio='Дилмурат Бобомуродов', category='5', otdel='Qiyma'),
-                    Worker(worker_id='7', fio='Сотрудник 7', category='5', otdel='Qiyma'),
-                    Worker(worker_id='8', fio='Сотрудник 8', category='4', otdel='Kesib'),
-                    Worker(worker_id='9', fio='Сотрудник 9', category='3', otdel='Kesib'),
-                ]
-                for worker in workers:
-                    db.session.add(worker)
-                db.session.commit()
-                print("Добавлены базовые работники для Render")
-    except Exception as e:
-        print(f"Ошибка проверки работников: {e}")
+# === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ===
+# Ничего не делаем при старте - база будет создана при первом запросе
 
 # === МАРШРУТЫ ===
 
@@ -103,23 +75,58 @@ def index():
 
 @app.route('/workers', methods=['GET', 'POST'])
 def workers():
-    if request.method == 'POST':
-        data = request.form.get('bulk_workers', '')
-        for line in data.strip().split('\n'):
-            parts = line.strip().split('\t')
-            if len(parts) >= 2:
-                wid = parts[0].strip()
-                # Если такой ID уже есть, обновляем имя и категорию, а не выдаем ошибку
-                worker = Worker.query.filter_by(worker_id=wid).first()
-                if worker:
-                    worker.fio = parts[1].strip()
-                    worker.category = parts[2].strip() if len(parts) > 2 else "5"
-                else:
-                    db.session.add(Worker(worker_id=wid, fio=parts[1].strip(), 
-                                        category=parts[2].strip() if len(parts) > 2 else "5"))
-        db.session.commit()
-    all_workers = Worker.query.order_by(Worker.worker_id.asc()).all()
-    return render_template('workers.html', workers=all_workers)
+    try:
+        # Безопасная инициализация базы при первом запросе
+        if database_url:
+            try:
+                db.create_all()
+                # Проверяем есть ли работники
+                workers_count = Worker.query.count()
+                if workers_count == 0:
+                    workers = [
+                        Worker(worker_id='5', fio='Дилмурат Бобомуродов', category='5', otdel='Qiyma'),
+                        Worker(worker_id='7', fio='Сотрудник 7', category='5', otdel='Qiyma'),
+                        Worker(worker_id='8', fio='Сотрудник 8', category='4', otdel='Kesib'),
+                        Worker(worker_id='9', fio='Сотрудник 9', category='3', otdel='Kesib'),
+                    ]
+                    for worker in workers:
+                        db.session.add(worker)
+                    db.session.commit()
+                    logger.info("Добавлены базовые работники для Render")
+            except Exception as e:
+                logger.error(f"Ошибка инициализации базы: {e}")
+                return f"Ошибка подключения к базе: {e}", 500
+        else:
+            # Локальная база
+            db.create_all()
+        
+        if request.method == 'POST':
+            data = request.form.get('bulk_workers', '')
+            for line in data.strip().split('\n'):
+                parts = line.strip().split('\t')
+                if len(parts) >= 2:
+                    wid = parts[0].strip()
+                    # Если такой ID уже есть, обновляем имя и категорию, а не выдаем ошибку
+                    existing = Worker.query.filter_by(worker_id=wid).first()
+                    if existing:
+                        existing.fio = parts[1].strip()
+                        existing.category = parts[2].strip() if len(parts) > 2 else existing.category
+                        existing.otdel = parts[3].strip() if len(parts) > 3 else existing.otdel
+                    else:
+                        db.session.add(Worker(
+                            worker_id=wid,
+                            fio=parts[1].strip(),
+                            category=parts[2].strip() if len(parts) > 2 else "5",
+                            otdel=parts[3].strip() if len(parts) > 3 else "Qiyma"
+                        ))
+            db.session.commit()
+            return redirect(url_for('workers'))
+        
+        all_workers = Worker.query.order_by(Worker.worker_id.asc()).all()
+        return render_template('workers.html', workers=all_workers)
+    except Exception as e:
+        logger.error(f"Ошибка в маршруте workers: {e}")
+        return f"Ошибка: {e}", 500
 
 @app.route('/delete_worker/<int:id>')
 def delete_worker(id):
