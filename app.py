@@ -57,6 +57,32 @@ class Record(db.Model):
 if not database_url:
     with app.app_context():
         db.create_all()
+else:
+    # На Render проверяем и создаем таблицы если нужно
+    try:
+        with app.app_context():
+            db.create_all()
+    except Exception as e:
+        print(f"Ошибка создания таблиц: {e}")
+    
+    # Проверяем есть ли работники на Render
+    try:
+        with app.app_context():
+            workers_count = Worker.query.count()
+            if workers_count == 0:
+                # Добавляем базовых работников для Render
+                workers = [
+                    Worker(worker_id='5', fio='Дилмурат Бобомуродов', category='5', otdel='Qiyma'),
+                    Worker(worker_id='7', fio='Сотрудник 7', category='5', otdel='Qiyma'),
+                    Worker(worker_id='8', fio='Сотрудник 8', category='4', otdel='Kesib'),
+                    Worker(worker_id='9', fio='Сотрудник 9', category='3', otdel='Kesib'),
+                ]
+                for worker in workers:
+                    db.session.add(worker)
+                db.session.commit()
+                print("Добавлены базовые работники для Render")
+    except Exception as e:
+        print(f"Ошибка проверки работников: {e}")
 
 # === МАРШРУТЫ ===
 
