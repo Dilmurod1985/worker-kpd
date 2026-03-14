@@ -18,14 +18,8 @@ if database_url:
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     
-    # НАСТРОЙКИ ДЛЯ RENDER (PostgreSQL)
+    # ПРОСТАЯ КОНФИГУРАЦИЯ ДЛЯ RENDER
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        "connect_args": {
-            "sslmode": "prefer",  # Меняем require на prefer
-            "sslcert": None,
-            "sslkey": None,
-            "sslrootcert": None
-        },
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
