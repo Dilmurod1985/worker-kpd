@@ -16,14 +16,17 @@ if database_url:
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
-    # Добавляем sslmode=disable для Render
+    # Добавляем правильный sslmode=require для Render
     if "?sslmode" not in database_url:
-        database_url += "?sslmode=disable"
+        database_url += "?sslmode=require"
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     
-    # ПРОСТАЯ КОНФИГУРАЦИЯ ДЛЯ RENDER
+    # КОНФИГУРАЦИЯ С ПРАВИЛЬНЫМ SSL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": {
+            "sslmode": "require"
+        },
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
