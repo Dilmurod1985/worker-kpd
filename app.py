@@ -162,30 +162,6 @@ def tabel():
     try:
         logger.info("Страница табеля загружается")
         
-        # Безопасная инициализация базы при первом запросе
-        if database_url:
-            try:
-                db.create_all()
-                # Проверяем есть ли работники
-                workers_count = Worker.query.count()
-                if workers_count == 0:
-                    workers = [
-                        Worker(worker_id='5', fio='Дилмурат Бобомуродов', category='5', otdel='Qiyma'),
-                        Worker(worker_id='7', fio='Сотрудник 7', category='5', otdel='Qiyma'),
-                        Worker(worker_id='8', fio='Сотрудник 8', category='4', otdel='Kesib'),
-                        Worker(worker_id='9', fio='Сотрудник 9', category='3', otdel='Kesib'),
-                    ]
-                    for worker in workers:
-                        db.session.add(worker)
-                    db.session.commit()
-                    logger.info("Добавлены базовые работники для Render в tabel")
-            except Exception as e:
-                logger.error(f"Ошибка инициализации базы в tabel: {e}")
-                return f"Ошибка подключения к базе: {e}", 500
-        else:
-            # Локальная база
-            db.create_all()
-        
         # Получаем значения из полей поиска
         search_date = request.args.get('search_date', '')
         search_id = request.args.get('search_id', '')
