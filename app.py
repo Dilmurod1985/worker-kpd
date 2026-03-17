@@ -118,7 +118,29 @@ def calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm
     return round(percentage, 1)
 
 # === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ===
-# Ничего не делаем при старте - база будет создана при первом запросе
+# Создаем таблицы и добавляем недостающие поля для локальной базы
+if not database_url:
+    with app.app_context():
+        db.create_all()
+        
+        # Проверяем и добавляем поле complexity_coefficient если его нет
+        try:
+            from sqlalchemy import text
+            # Проверяем существует ли поле complexity_coefficient
+            result = db.session.execute(text("PRAGMA table_info(record)"))
+            columns = [row[1] for row in result]
+            
+            if 'complexity_coefficient' not in columns:
+                print("Добавляю поле complexity_coefficient в таблицу record...")
+                db.session.execute(text("ALTER TABLE record ADD COLUMN complexity_coefficient REAL DEFAULT 1.0"))
+                db.session.commit()
+                print("Поле complexity_coefficient успешно добавлено")
+            else:
+                print("Поле complexity_coefficient уже существует")
+                
+        except Exception as e:
+            print(f"Ошибка при добавлении поля: {e}")
+            db.session.rollback()
 
 # === МАРШРУТЫ ===
 
