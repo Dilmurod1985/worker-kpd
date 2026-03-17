@@ -53,6 +53,69 @@ class Record(db.Model):
     kalibr = db.Column(db.Float)
     sht = db.Column(db.Float)
     shift = db.Column(db.String(20))
+    # Добавляем поле для сохранения коэффициента сложности
+    complexity_coefficient = db.Column(db.Float, default=1.0)
+
+# === ФУНКЦИИ РАСЧЕТА СЛОЖНОСТИ ===
+def get_complexity_coefficient(kalibr):
+    """
+    Возвращает коэффициент сложности на основе калибра (веса бабины)
+    
+    Args:
+        kalibr (float): вес бабины в кг
+        
+    Returns:
+        float: коэффициент сложности
+    """
+    if kalibr is None or kalibr <= 0:
+        return 1.0
+    
+    if kalibr <= 10:
+        return 1.5  # очень высокая сложность
+    elif kalibr <= 20:
+        return 1.3  # высокая сложность
+    elif kalibr <= 35:
+        return 1.15  # средняя сложность
+    else:
+        return 1.0  # базовая сложность
+
+def get_category_norm(category):
+    """
+    Возвращает среднюю норму для категории
+    
+    Args:
+        category (str): категория сотрудника
+        
+    Returns:
+        float: средняя норма в кг
+    """
+    category_norms = {
+        "1": (300 + 450) / 2,  # 375 кг
+        "2": (280 + 400) / 2,  # 340 кг
+        "3": (250 + 350) / 2,  # 300 кг
+        "4": (220 + 280) / 2,  # 250 кг
+        "5": (100 + 180) / 2,  # 140 кг
+    }
+    return category_norms.get(category, 140)  # по умолчанию как 5 категория
+
+def calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm):
+    """
+    Рассчитывает процент выполнения плана с учетом сложности
+    
+    Args:
+        real_weight (float): реальный вес в кг
+        complexity_coeff (float): коэффициент сложности
+        category_norm (float): средняя норма категории
+        
+    Returns:
+        float: процент выполнения плана
+    """
+    if category_norm <= 0:
+        return 0
+    
+    effective_weight = real_weight * complexity_coeff
+    percentage = (effective_weight / category_norm) * 100
+    return round(percentage, 1)
 
 # === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ===
 # Ничего не делаем при старте - база будет создана при первом запросе
@@ -146,12 +209,17 @@ def bulk_input():
             wid = p[0].strip()
             if Worker.query.filter_by(worker_id=wid).first():
                 try:
+                    # Получаем калибр и рассчитываем коэффициент сложности
+                    kalibr = float(p[3].replace(',', '.'))
+                    complexity_coeff = get_complexity_coefficient(kalibr)
+                    
                     db.session.add(Record(
                         worker_id=wid, date=date_str, otdel=p[1],
                         total_kpd=float(p[2].replace(',', '.')), 
-                        kalibr=float(p[3].replace(',', '.')), 
+                        kalibr=kalibr, 
                         sht=float(p[4].replace(',', '.')), 
-                        shift=p[5] if len(p) > 5 else "Ночь"
+                        shift=p[5] if len(p) > 5 else "Ночь",
+                        complexity_coefficient=complexity_coeff  # сохраняем коэффициент
                     ))
                 except: continue
     db.session.commit()
@@ -199,23 +267,33 @@ def tabel():
             if not w:
                 logger.warning(f"Не найден работник с ID: {data['id']}")
                 continue
-                
-            cat_num = "".join(filter(str.isdigit, w.category)) if w and w.category else "5"
-            norm_val = norms.get(cat_num, 100)
-            percent = (data['summa'] / norm_val * 100) if norm_val > 0 else 0
+            
+            # Получаем категорию и норму
+            category = w.category if w else "5"
+            category_norm = get_category_norm(category)
+            
+            # Рассчитываем коэффициент сложности на основе калибра
+            complexity_coeff = get_complexity_coefficient(data['kalibr'])
+            
+            # Рассчитываем процент выполнения с учетом сложности
+            real_weight = data['summa']
+            effective_weight = real_weight * complexity_coeff
+            percentage = calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm)
             
             rows.append({
                 'db_id': data['id_db'],
                 'date': data['date'],
                 'id': data['id'],
                 'fio': w.fio if w else "-",
-                'cat': w.category if w else "5", 
+                'cat': category, 
                 'pos': ", ".join(data['pos']),
                 'kalibr': data['kalibr'], 
                 'sht': data['sht'], 
-                'summa': round(data['summa'], 2),
-                'norma': norm_val, 
-                'percent': round(percent, 1), 
+                'summa': round(real_weight, 2),           # реальный вес
+                'effective_weight': round(effective_weight, 2),  # эффективный вес
+                'complexity_coeff': complexity_coeff,           # коэффициент сложности
+                'norma': category_norm, 
+                'percent': percentage, 
                 'shift': data['shift']
             })
 

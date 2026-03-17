@@ -126,7 +126,9 @@
                         <th>ID</th>
                         <th>Сотрудник</th>
                         <th>Позиция</th>
-                        <th>Кг</th>
+                        <th>Кг (реал)</th>
+                        <th>Кг (эффект)</th>
+                        <th>Коэфф.</th>
                         <th>%</th>
                         <th>Смена</th>
                         <th></th>
@@ -143,6 +145,8 @@
                         </td>
                         <td><span class="badge bg-light text-dark border">{{ s.pos }}</span></td>
                         <td class="fw-bold">{{ s.summa }}</td>
+                        <td class="fw-bold text-success">{{ s.effective_weight }}</td>
+                        <td class="fw-bold text-info">{{ s.complexity_coeff }}</td>
                         <td>
                             <span class="{{ 'badge-ok' if s.percent >= 100 else 'badge-bad' }}">
                                 {{ s.percent }}%
