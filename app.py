@@ -335,13 +335,67 @@ def tabel():
         logger.error(f"Ошибка страницы табеля: {e}")
         return f"Ошибка: {e}", 500
 
-@app.route('/delete_record/<int:id>')
+@app.route('/delete_record/<int:id>', methods=['POST'])
 def delete_record(id):
-    rec = Record.query.get(id)
-    if rec:
-        Record.query.filter_by(worker_id=rec.worker_id, date=rec.date, shift=rec.shift).delete()
+    try:
+        rec = Record.query.get(id)
+        if rec:
+            Record.query.filter_by(worker_id=rec.worker_id, date=rec.date, shift=rec.shift).delete()
+            db.session.commit()
+        
+        # Получаем текущие параметры для перенаправления
+        search_date = request.form.get('search_date', request.args.get('search_date', ''))
+        search_id = request.form.get('search_id', request.args.get('search_id', ''))
+        
+        # Формируем URL с сохранением параметров
+        params = []
+        if search_date:
+            params.append(f"search_date={search_date}")
+        if search_id:
+            params.append(f"search_id={search_id}")
+        
+        redirect_url = "/tabel"
+        if params:
+            redirect_url += "?" + "&".join(params)
+        
+        return redirect(redirect_url)
+    except Exception as e:
+        logger.error(f"Ошибка удаления записи: {e}")
+        return redirect("/tabel")
+
+@app.route('/delete_multiple', methods=['POST'])
+def delete_multiple():
+    try:
+        from flask import request
+        
+        # Получаем ID записей для удаления
+        data = request.get_json()
+        if not data or 'ids' not in data:
+            return {'success': False, 'error': 'Не указаны ID записей'}
+        
+        ids = data['ids']
+        if not isinstance(ids, list) or not ids:
+            return {'success': False, 'error': 'Некорректный формат ID'}
+        
+        # Удаляем записи
+        deleted_count = 0
+        for record_id in ids:
+            try:
+                rec = Record.query.get(record_id)
+                if rec:
+                    Record.query.filter_by(worker_id=rec.worker_id, date=rec.date, shift=rec.shift).delete()
+                    deleted_count += 1
+            except:
+                continue
+        
         db.session.commit()
-    return redirect(url_for('tabel'))
+        logger.info(f"Удалено {deleted_count} записей")
+        
+        return {'success': True, 'deleted_count': deleted_count}
+    except Exception as e:
+        logger.error(f"Ошибка массового удаления: {e}")
+        db.session.rollback()
+        return {'success': False, 'error': str(e)}
 
 @app.route('/export_excel')
 def export_excel():

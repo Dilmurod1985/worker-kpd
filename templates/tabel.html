@@ -118,10 +118,31 @@
             </div>
         </div>
 
+        <!-- Кнопка массового удаления -->
+        {% if summary %}
+        <div class="card mb-4 border-start border-danger border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0">🗑️ Массовое удаление</h5>
+                        <small class="text-muted">Выберите записи для удаления</small>
+                    </div>
+                    <div>
+                        <span class="badge bg-secondary me-2" id="selected-count">0 выбрано</span>
+                        <button type="button" class="btn btn-danger" id="delete-selected" disabled>
+                            🗑️ Удалить выбранные
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="table-responsive">
             <table class="table table-hover align-middle shadow-sm">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" class="form-check-input" id="select-all"></th>
                         <th>Дата</th>
                         <th>ID</th>
                         <th>Сотрудник</th>
@@ -137,6 +158,7 @@
                 <tbody>
                     {% for s in summary %}
                     <tr class="{{ 'low-kpd' if s.percent < 80 else '' }}">
+                        <td><input type="checkbox" class="form-check-input row-checkbox" data-id="{{ s.db_id }}"></td>
                         <td class="text-muted small">{{ s.date }}</td>
                         <td class="fw-bold text-primary">{{ s.id }}</td>
                         <td>
@@ -155,7 +177,7 @@
                         <td>{{ s.shift }}</td>
                         <td class="text-end">
                             <a href="{{ url_for('delete_record', id=s.db_id) }}" 
-                               class="btn btn-outline-danger btn-sm border-0" 
+                               class="btn btn-outline-danger btn-sm border-0 delete-single" 
                                onclick="return confirm('Удалить эту запись?')">🗑</a>
                         </td>
                     </tr>
@@ -164,6 +186,124 @@
             </table>
         </div>
     </div>
+
+    <script>
+        // Функция для получения текущих параметров URL
+        function getCurrentParams() {
+            const params = new URLSearchParams(window.location.search);
+            return params.toString();
+        }
+
+        // Функция для перенаправления с сохранением параметров
+        function redirectWithParams(path) {
+            const currentParams = getCurrentParams();
+            if (currentParams) {
+                window.location.href = `${path}?${currentParams}`;
+            } else {
+                window.location.href = path;
+            }
+        }
+
+        // Обработчики для чекбоксов
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAllCheckbox = document.getElementById('select-all');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const selectedCountSpan = document.getElementById('selected-count');
+            const deleteSelectedBtn = document.getElementById('delete-selected');
+
+            // Функция обновления счетчика и кнопки
+            function updateSelectionUI() {
+                const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
+                selectedCountSpan.textContent = `${selectedCount} выбрано`;
+                deleteSelectedBtn.disabled = selectedCount === 0;
+                
+                // Обновление состояния "выбрать все"
+                if (rowCheckboxes.length === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.disabled = true;
+                } else {
+                    selectAllCheckbox.checked = selectedCount === rowCheckboxes.length;
+                    selectAllCheckbox.disabled = false;
+                }
+            }
+
+            // Обработчик для "выбрать все"
+            selectAllCheckbox.addEventListener('change', function() {
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateSelectionUI();
+            });
+
+            // Обработчики для чекбоксов строк
+            rowCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectionUI);
+            });
+
+            // Обработчик для кнопки массового удаления
+            deleteSelectedBtn.addEventListener('click', function() {
+                const selectedIds = [];
+                document.querySelectorAll('.row-checkbox:checked').forEach(checkbox => {
+                    selectedIds.push(checkbox.dataset.id);
+                });
+
+                if (selectedIds.length === 0) return;
+
+                const confirmed = confirm(`Вы уверены, что хотите удалить ${selectedIds.length} запис${selectedIds.length === 1 ? 'ь' : selectedIds.length < 5 ? 'и' : 'ей'}?`);
+                if (!confirmed) return;
+
+                // Отправляем запрос на массовое удаление
+                fetch('/delete_multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ ids: selectedIds })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Перезагружаем страницу с сохранением параметров
+                        redirectWithParams('/tabel');
+                    } else {
+                        alert('Ошибка при удалении: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Произошла ошибка при удалении записей');
+                });
+            });
+
+            // Обновление одиночных ссылок удаления для сохранения параметров
+            document.querySelectorAll('.delete-single').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const id = this.getAttribute('href').match(/\/delete_record\/(\d+)/)[1];
+                    
+                    if (confirm('Удалить эту запись?')) {
+                        fetch(`/delete_record/${id}`, {
+                            method: 'POST'
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                redirectWithParams('/tabel');
+                            } else {
+                                alert('Ошибка при удалении записи');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Произошла ошибка при удалении записи');
+                        });
+                    }
+                });
+            });
+
+            // Инициализация UI при загрузке
+            updateSelectionUI();
+        });
+    </script>
 
 </body>
 </html>
