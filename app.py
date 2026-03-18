@@ -43,6 +43,7 @@ class Worker(db.Model):
     worker_id = db.Column(db.String(20), unique=True)
     fio = db.Column(db.String(100))
     category = db.Column(db.String(50))
+    otdel = db.Column(db.String(100))  # Добавляем поле otdel
 
 class Record(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -126,7 +127,8 @@ if not database_url:
         # Проверяем и добавляем поле complexity_coefficient если его нет
         try:
             from sqlalchemy import text
-            # Проверяем существует ли поле complexity_coefficient
+            
+            # Проверяем и добавляем поле complexity_coefficient в record
             result = db.session.execute(text("PRAGMA table_info(record)"))
             columns = [row[1] for row in result]
             
@@ -138,8 +140,20 @@ if not database_url:
             else:
                 print("Поле complexity_coefficient уже существует")
                 
+            # Проверяем и добавляем поле otdel в worker
+            result = db.session.execute(text("PRAGMA table_info(worker)"))
+            columns = [row[1] for row in result]
+            
+            if 'otdel' not in columns:
+                print("Добавляю поле otdel в таблицу worker...")
+                db.session.execute(text("ALTER TABLE worker ADD COLUMN otdel VARCHAR(100) DEFAULT 'Qiyma'"))
+                db.session.commit()
+                print("Поле otdel успешно добавлено")
+            else:
+                print("Поле otdel уже существует")
+                
         except Exception as e:
-            print(f"Ошибка при добавлении поля: {e}")
+            print(f"Ошибка при добавлении полей: {e}")
             db.session.rollback()
 
 # === МАРШРУТЫ ===
