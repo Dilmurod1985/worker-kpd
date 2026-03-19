@@ -323,13 +323,28 @@ def tabel():
         for r in records:
             key = (r.date, r.shift, r.worker_id)
             if key not in grouped:
+                # Безопасное получение списка позиций
+                current_pos = r.otdel
+                if isinstance(current_pos, list):
+                    pos_list = current_pos
+                elif isinstance(current_pos, str):
+                    pos_list = [p.strip() for p in current_pos.split(',') if p.strip()]
+                else:
+                    pos_list = [str(current_pos)]
+                
                 grouped[key] = {
-                    'id_db': r.id, 'date': r.date, 'id': r.worker_id, 'pos': [r.otdel],
+                    'id_db': r.id, 'date': r.date, 'id': r.worker_id, 'pos': pos_list,
                     'kalibr': r.kalibr, 'sht': r.sht, 'summa': r.total_kpd, 'shift': r.shift
                 }
             else:
-                if r.otdel not in grouped[key]['pos']:
-                    grouped[key]['pos'].append(r.otdel)
+                # Безопасное добавление позиции в существующий список
+                current_pos = r.otdel
+                if isinstance(current_pos, str) and current_pos not in grouped[key]['pos']:
+                    grouped[key]['pos'].append(current_pos)
+                elif isinstance(current_pos, list):
+                    for pos in current_pos:
+                        if pos not in grouped[key]['pos']:
+                            grouped[key]['pos'].append(pos)
                 grouped[key]['summa'] += r.total_kpd
                 grouped[key]['sht'] += r.sht
         
