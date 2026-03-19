@@ -112,7 +112,7 @@ def get_category_norm(category, kalibr=None, otdel=None):
     standard_kalibrs = [20, 30, 40]
     nearest_kalibr = min(standard_kalibrs, key=lambda x: abs(x - kalibr))
     
-    # План в штуках для каждой категории
+    # План в штуках для каждой категории (точные значения из таблицы)
     plans_pieces = {
         "1": {20: 15, 30: 12, 40: 10},
         "2": {20: 13, 30: 10, 40: 9},
@@ -350,7 +350,8 @@ def tabel():
             
             # Получаем категорию и норму
             category = w.category if w else "5"
-            otdel = data['pos'].split(', ')[0] if data['pos'] else "Qiyma"  # Берем первый отдел
+            # data['pos'] уже список, берем первый отдел
+            otdel = data['pos'][0] if data['pos'] and len(data['pos']) > 0 else "Qiyma"
             category_norm = get_category_norm(category, data['kalibr'], otdel)
             
             # Рассчитываем коэффициент сложности на основе калибра
@@ -370,7 +371,7 @@ def tabel():
                 'id': data['id'],
                 'fio': w.fio if w else "-",
                 'cat': category, 
-                'pos': ", ".join(data['pos']),
+                'pos': ", ".join(data['pos']) if isinstance(data['pos'], list) else str(data['pos']),
                 'kalibr': data['kalibr'], 
                 'sht': data['sht'], 
                 'summa': round(real_weight, 2),           # реальный вес
