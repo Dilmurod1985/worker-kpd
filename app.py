@@ -323,14 +323,16 @@ def tabel():
         for r in records:
             key = (r.date, r.shift, r.worker_id)
             if key not in grouped:
-                # Безопасное получение списка позиций
-                current_pos = r.otdel
-                if isinstance(current_pos, list):
-                    pos_list = current_pos
-                elif isinstance(current_pos, str):
-                    pos_list = [p.strip() for p in current_pos.split(',') if p.strip()]
+                # Проверяем, в каком формате данные в базе
+                raw_otdel = r.otdel
+                if isinstance(raw_otdel, list):
+                    pos_list = raw_otdel
+                elif isinstance(raw_otdel, str):
+                    # Если это строка, убираем лишние скобки и кавычки, если они попали в текст
+                    clean_str = raw_otdel.replace('[', '').replace(']', '').replace("'", "").replace('"', '')
+                    pos_list = [p.strip() for p in clean_str.split(',') if p.strip()]
                 else:
-                    pos_list = [str(current_pos)]
+                    pos_list = [str(raw_otdel)]
                 
                 grouped[key] = {
                     'id_db': r.id, 'date': r.date, 'id': r.worker_id, 'pos': pos_list,
@@ -338,13 +340,21 @@ def tabel():
                 }
             else:
                 # Безопасное добавление позиции в существующий список
-                current_pos = r.otdel
-                if isinstance(current_pos, str) and current_pos not in grouped[key]['pos']:
-                    grouped[key]['pos'].append(current_pos)
-                elif isinstance(current_pos, list):
-                    for pos in current_pos:
+                raw_otdel = r.otdel
+                if isinstance(raw_otdel, list):
+                    for pos in raw_otdel:
                         if pos not in grouped[key]['pos']:
                             grouped[key]['pos'].append(pos)
+                elif isinstance(raw_otdel, str):
+                    # Очищаем строку от скобок и кавычек
+                    clean_str = raw_otdel.replace('[', '').replace(']', '').replace("'", "").replace('"', '')
+                    positions = [p.strip() for p in clean_str.split(',') if p.strip()]
+                    for pos in positions:
+                        if pos not in grouped[key]['pos']:
+                            grouped[key]['pos'].append(pos)
+                else:
+                    if str(raw_otdel) not in grouped[key]['pos']:
+                        grouped[key]['pos'].append(str(raw_otdel))
                 grouped[key]['summa'] += r.total_kpd
                 grouped[key]['sht'] += r.sht
         
