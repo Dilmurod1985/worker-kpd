@@ -322,41 +322,32 @@ def tabel():
 
         for r in records:
             key = (r.date, r.shift, r.worker_id)
+            # Безопасная обработка otdel (база может вернуть список или строку)
+            raw_otdel = r.otdel
+            if isinstance(raw_otdel, list):
+                current_pos = raw_otdel
+            else:
+                clean_str = str(raw_otdel).replace('[', '').replace(']', '').replace("'", "").replace('"', '')
+                current_pos = [p.strip() for p in clean_str.split(',') if p.strip()]
+
             if key not in grouped:
-                # Проверяем, в каком формате данные в базе
-                raw_otdel = r.otdel
-                if isinstance(raw_otdel, list):
-                    pos_list = raw_otdel
-                elif isinstance(raw_otdel, str):
-                    # Если это строка, убираем лишние скобки и кавычки, если они попали в текст
-                    clean_str = raw_otdel.replace('[', '').replace(']', '').replace("'", "").replace('"', '')
-                    pos_list = [p.strip() for p in clean_str.split(',') if p.strip()]
-                else:
-                    pos_list = [str(raw_otdel)]
-                
                 grouped[key] = {
-                    'id_db': r.id, 'date': r.date, 'id': r.worker_id, 'pos': pos_list,
-                    'kalibr': r.kalibr, 'sht': r.sht, 'summa': r.total_kpd, 'shift': r.shift
+                    'id_db': r.id, # Важно: сохраняем ID именно этой записи
+                    'date': r.date, 
+                    'id': r.worker_id, 
+                    'pos': current_pos,
+                    'kalibr': r.kalibr or 30, 
+                    'sht': r.sht or 0, 
+                    'summa': r.total_kpd or 0, 
+                    'shift': r.shift
                 }
             else:
-                # Безопасное добавление позиции в существующий список
-                raw_otdel = r.otdel
-                if isinstance(raw_otdel, list):
-                    for pos in raw_otdel:
-                        if pos not in grouped[key]['pos']:
-                            grouped[key]['pos'].append(pos)
-                elif isinstance(raw_otdel, str):
-                    # Очищаем строку от скобок и кавычек
-                    clean_str = raw_otdel.replace('[', '').replace(']', '').replace("'", "").replace('"', '')
-                    positions = [p.strip() for p in clean_str.split(',') if p.strip()]
-                    for pos in positions:
-                        if pos not in grouped[key]['pos']:
-                            grouped[key]['pos'].append(pos)
-                else:
-                    if str(raw_otdel) not in grouped[key]['pos']:
-                        grouped[key]['pos'].append(str(raw_otdel))
-                grouped[key]['summa'] += r.total_kpd
-                grouped[key]['sht'] += r.sht
+                # Складываем только если это тот же человек в ту же смену
+                for p in current_pos:
+                    if p not in grouped[key]['pos']:
+                        grouped[key]['pos'].append(p)
+                grouped[key]['summa'] += (r.total_kpd or 0)
+                grouped[key]['sht'] += (r.sht or 0)
         
         rows = []
         for data in grouped.values():
@@ -429,8 +420,10 @@ def delete_record(id):
     try:
         rec = Record.query.get(id)
         if rec:
-            Record.query.filter_by(worker_id=rec.worker_id, date=rec.date, shift=rec.shift).delete()
+            # Удаляем только эту конкретную запись по первичному ключу
+            db.session.delete(rec)
             db.session.commit()
+            logger.info(f"Удалена запись с ID: {id}")
         
         # Получаем текущие параметры для перенаправления
         search_date = request.form.get('search_date', request.args.get('search_date', ''))
@@ -466,15 +459,17 @@ def delete_multiple():
         if not isinstance(ids, list) or not ids:
             return {'success': False, 'error': 'Некорректный формат ID'}
         
-        # Удаляем записи
+        # Удаляем записи по первичным ключам
         deleted_count = 0
         for record_id in ids:
             try:
                 rec = Record.query.get(record_id)
                 if rec:
-                    Record.query.filter_by(worker_id=rec.worker_id, date=rec.date, shift=rec.shift).delete()
+                    # Удаляем только эту конкретную запись по первичному ключу
+                    db.session.delete(rec)
                     deleted_count += 1
-            except:
+            except Exception as e:
+                logger.error(f"Ошибка удаления записи {record_id}: {e}")
                 continue
         
         db.session.commit()
