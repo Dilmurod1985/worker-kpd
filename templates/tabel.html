@@ -150,6 +150,7 @@
                         <th>Кг (реал)</th>
                         <th>Кг (эффект)</th>
                         <th>Коэфф.</th>
+                        <th>План (шт)</th>
                         <th>%</th>
                         <th>Смена</th>
                         <th></th>
@@ -169,6 +170,14 @@
                         <td class="fw-bold">{{ s.summa }}</td>
                         <td class="fw-bold text-success">{{ s.effective_weight }}</td>
                         <td class="fw-bold text-info">{{ s.complexity_coeff }}</td>
+                        <td class="fw-bold text-warning">
+                            {% if s.pieces_plan %}
+                                {{ s.pieces_plan }} шт
+                                <br><small class="text-muted">({{ s.norma|int }} кг)</small>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>
                             <span class="{{ 'badge-ok' if s.percent >= 100 else 'badge-bad' }}">
                                 {{ s.percent }}%

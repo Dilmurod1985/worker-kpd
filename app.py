@@ -80,24 +80,77 @@ def get_complexity_coefficient(kalibr):
     else:
         return 1.0  # базовая сложность
 
-def get_category_norm(category):
+def get_category_norm(category, kalibr=None, otdel=None):
     """
-    Возвращает среднюю норму для категории
+    Возвращает норму для категории с учетом калибра и позиции
     
     Args:
         category (str): категория сотрудника
+        kalibr (float): вес бабины в кг
+        otdel (str): позиция/отдел сотрудника
         
     Returns:
-        float: средняя норма в кг
+        float: норма в кг
     """
-    category_norms = {
-        "1": (300 + 450) / 2,  # 375 кг
-        "2": (280 + 400) / 2,  # 340 кг
-        "3": (250 + 350) / 2,  # 300 кг
-        "4": (220 + 280) / 2,  # 250 кг
-        "5": (100 + 180) / 2,  # 140 кг
+    # Если это не позиция Turk, используем старую логику
+    if otdel != "Turk":
+        # Старые нормы для других позиций
+        category_norms = {
+            "1": (300 + 450) / 2,  # 375 кг
+            "2": (280 + 400) / 2,  # 340 кг
+            "3": (250 + 350) / 2,  # 300 кг
+            "4": (220 + 280) / 2,  # 250 кг
+            "5": (100 + 180) / 2,  # 140 кг
+        }
+        return category_norms.get(category, 140)
+    
+    # Новая логика для позиции Turk
+    if kalibr is None:
+        kalibr = 30  # значение по умолчанию
+    
+    # Определяем стандартные калибры
+    standard_kalibrs = [20, 30, 40]
+    nearest_kalibr = min(standard_kalibrs, key=lambda x: abs(x - kalibr))
+    
+    # План в штуках для каждой категории
+    plans_pieces = {
+        "1": {20: 15, 30: 12, 40: 10},
+        "2": {20: 13, 30: 10, 40: 9},
+        "3": {20: 11, 30: 8, 40: 7},
+        "4": {20: 9, 30: 7, 40: 6},
+        "5": {20: 8, 30: 6, 40: 5},
     }
-    return category_norms.get(category, 140)  # по умолчанию как 5 категория
+    
+    # Получаем план в штуках
+    pieces = plans_pieces.get(category, {20: 8, 30: 6, 40: 5}).get(nearest_kalibr, 6)
+    
+    # Рассчитываем норму в кг: План (шт) * Калибр (кг)
+    norm_kg = pieces * kalibr
+    
+    return norm_kg
+
+def get_pieces_plan(category, kalibr, otdel):
+    """
+    Возвращает план в штуках для отображения
+    """
+    if otdel != "Turk":
+        return None
+    
+    if kalibr is None:
+        kalibr = 30
+    
+    standard_kalibrs = [20, 30, 40]
+    nearest_kalibr = min(standard_kalibrs, key=lambda x: abs(x - kalibr))
+    
+    plans_pieces = {
+        "1": {20: 15, 30: 12, 40: 10},
+        "2": {20: 13, 30: 10, 40: 9},
+        "3": {20: 11, 30: 8, 40: 7},
+        "4": {20: 9, 30: 7, 40: 6},
+        "5": {20: 8, 30: 6, 40: 5},
+    }
+    
+    return plans_pieces.get(category, {20: 8, 30: 6, 40: 5}).get(nearest_kalibr, 6)
 
 def calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm):
     """
@@ -124,36 +177,27 @@ if not database_url:
     with app.app_context():
         db.create_all()
         
-        # Проверяем и добавляем поле complexity_coefficient если его нет
+        # === БЛОК АВТО-ИСПРАВЛЕНИЯ БАЗЫ ===
         try:
             from sqlalchemy import text
             
-            # Проверяем и добавляем поле complexity_coefficient в record
+            # 1. Исправляем таблицу Record
             result = db.session.execute(text("PRAGMA table_info(record)"))
             columns = [row[1] for row in result]
-            
             if 'complexity_coefficient' not in columns:
-                print("Добавляю поле complexity_coefficient в таблицу record...")
                 db.session.execute(text("ALTER TABLE record ADD COLUMN complexity_coefficient REAL DEFAULT 1.0"))
-                db.session.commit()
-                print("Поле complexity_coefficient успешно добавлено")
-            else:
-                print("Поле complexity_coefficient уже существует")
-                
-            # Проверяем и добавляем поле otdel в worker
+            
+            # 2. Исправляем таблицу Worker (Здесь была твоя ошибка!)
             result = db.session.execute(text("PRAGMA table_info(worker)"))
             columns = [row[1] for row in result]
-            
             if 'otdel' not in columns:
-                print("Добавляю поле otdel в таблицу worker...")
+                print("Добавляю пропущенную колонку otdel...")
                 db.session.execute(text("ALTER TABLE worker ADD COLUMN otdel VARCHAR(100) DEFAULT 'Qiyma'"))
-                db.session.commit()
-                print("Поле otdel успешно добавлено")
-            else:
-                print("Поле otdel уже существует")
-                
+            
+            db.session.commit()
+            print("База данных успешно обновлена, данные сохранены!")
         except Exception as e:
-            print(f"Ошибка при добавлении полей: {e}")
+            print(f"Ошибка при обновлении полей: {e}")
             db.session.rollback()
 
 # === МАРШРУТЫ ===
@@ -306,7 +350,8 @@ def tabel():
             
             # Получаем категорию и норму
             category = w.category if w else "5"
-            category_norm = get_category_norm(category)
+            otdel = data['pos'].split(', ')[0] if data['pos'] else "Qiyma"  # Берем первый отдел
+            category_norm = get_category_norm(category, data['kalibr'], otdel)
             
             # Рассчитываем коэффициент сложности на основе калибра
             complexity_coeff = get_complexity_coefficient(data['kalibr'])
@@ -315,6 +360,9 @@ def tabel():
             real_weight = data['summa']
             effective_weight = real_weight * complexity_coeff
             percentage = calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm)
+            
+            # Получаем план в штуках для отображения
+            pieces_plan = get_pieces_plan(category, data['kalibr'], otdel)
             
             rows.append({
                 'db_id': data['id_db'],
@@ -329,6 +377,7 @@ def tabel():
                 'effective_weight': round(effective_weight, 2),  # эффективный вес
                 'complexity_coeff': complexity_coeff,           # коэффициент сложности
                 'norma': category_norm, 
+                'pieces_plan': pieces_plan,                  # план в штуках
                 'percent': percentage, 
                 'shift': data['shift']
             })
