@@ -219,25 +219,6 @@ def index():
 @app.route('/workers', methods=['GET', 'POST'])
 def workers():
     try:
-        # Инициализируем базу только при реальном доступе
-        if database_url:
-            try:
-                # Проверяем подключение с text()
-                from sqlalchemy import text
-                db.session.execute(text('SELECT 1'))
-            except Exception as e:
-                logger.error(f"Ошибка подключения к PostgreSQL: {e}")
-                # Пробуем пересоздать подключение
-                try:
-                    db.create_all()
-                    logger.info("База данных PostgreSQL инициализирована")
-                except Exception as init_error:
-                    logger.error(f"Ошибка инициализации базы: {init_error}")
-                    return f"Ошибка подключения к базе: {e}", 500
-        else:
-            # Локальная база
-            db.create_all()
-        
         if request.method == 'POST':
             data = request.form.get('bulk_workers', '')
             for line in data.strip().split('\n'):
@@ -304,25 +285,6 @@ def bulk_input():
 def tabel():
     try:
         logger.info("Страница табеля загружается")
-        
-        # Безопасная инициализация базы для Render
-        if database_url:
-            try:
-                # Проверяем подключение с text()
-                from sqlalchemy import text
-                db.session.execute(text('SELECT 1'))
-            except Exception as e:
-                logger.error(f"Ошибка подключения к PostgreSQL в tabel: {e}")
-                # Пробуем инициализировать базу
-                try:
-                    db.create_all()
-                    logger.info("База данных PostgreSQL инициализирована в tabel")
-                except Exception as init_error:
-                    logger.error(f"Ошибка инициализации базы в tabel: {init_error}")
-                    return f"Ошибка подключения к базе: {e}", 500
-        else:
-            # Локальная база
-            db.create_all()
         
         # Получаем значения из полей поиска
         search_date = request.args.get('search_date', '')
