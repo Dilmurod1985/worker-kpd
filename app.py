@@ -285,8 +285,19 @@ def tabel():
         search_date = request.args.get('search_date', '')
         search_id = request.args.get('search_id', '')
 
-        records = Record.query.all()
+        # Безопасно получаем записи - если база пуста, вернется пустой список
+        try:
+            records = Record.query.all()
+        except Exception as db_error:
+            logger.error(f"Ошибка получения записей: {db_error}")
+            records = []
+        
         logger.info(f"Найдено записей: {len(records)}")
+        
+        # Если записей нет, показываем пустую таблицу
+        if not records:
+            return render_template('tabel.html', summary=[], search_date=search_date, search_id=search_id,
+                               total_day_tons=0, total_night_tons=0)
         
         norms = {"1": 300, "2": 280, "3": 250, "4": 220, "5": 100}
         grouped = {}
