@@ -219,26 +219,20 @@ def index():
 @app.route('/workers', methods=['GET', 'POST'])
 def workers():
     try:
-        # Безопасная инициализация базы при первом запросе
+        # Инициализируем базу только при реальном доступе
         if database_url:
             try:
-                db.create_all()
-                # Проверяем есть ли работники
-                workers_count = Worker.query.count()
-                if workers_count == 0:
-                    workers = [
-                        Worker(worker_id='5', fio='Дилмурат Бобомуродов', category='5', otdel='Qiyma'),
-                        Worker(worker_id='7', fio='Сотрудник 7', category='5', otdel='Qiyma'),
-                        Worker(worker_id='8', fio='Сотрудник 8', category='4', otdel='Kesib'),
-                        Worker(worker_id='9', fio='Сотрудник 9', category='3', otdel='Kesib'),
-                    ]
-                    for worker in workers:
-                        db.session.add(worker)
-                    db.session.commit()
-                    logger.info("Добавлены базовые работники для Render")
+                # Проверяем подключение простым запросом
+                db.session.execute('SELECT 1')
             except Exception as e:
-                logger.error(f"Ошибка инициализации базы: {e}")
-                return f"Ошибка подключения к базе: {e}", 500
+                logger.error(f"Ошибка подключения к PostgreSQL: {e}")
+                # Пробуем пересоздать подключение
+                try:
+                    db.create_all()
+                    logger.info("База данных PostgreSQL инициализирована")
+                except Exception as init_error:
+                    logger.error(f"Ошибка инициализации базы: {init_error}")
+                    return f"Ошибка подключения к базе: {e}", 500
         else:
             # Локальная база
             db.create_all()
