@@ -304,6 +304,24 @@ def tabel():
     try:
         logger.info("Страница табеля загружается")
         
+        # Безопасная инициализация базы для Render
+        if database_url:
+            try:
+                # Проверяем подключение простым запросом
+                db.session.execute('SELECT 1')
+            except Exception as e:
+                logger.error(f"Ошибка подключения к PostgreSQL в tabel: {e}")
+                # Пробуем инициализировать базу
+                try:
+                    db.create_all()
+                    logger.info("База данных PostgreSQL инициализирована в tabel")
+                except Exception as init_error:
+                    logger.error(f"Ошибка инициализации базы в tabel: {init_error}")
+                    return f"Ошибка подключения к базе: {e}", 500
+        else:
+            # Локальная база
+            db.create_all()
+        
         # Получаем значения из полей поиска
         search_date = request.args.get('search_date', '')
         search_id = request.args.get('search_id', '')
