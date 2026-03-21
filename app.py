@@ -222,8 +222,9 @@ def workers():
         # Инициализируем базу только при реальном доступе
         if database_url:
             try:
-                # Проверяем подключение простым запросом
-                db.session.execute('SELECT 1')
+                # Проверяем подключение с text()
+                from sqlalchemy import text
+                db.session.execute(text('SELECT 1'))
             except Exception as e:
                 logger.error(f"Ошибка подключения к PostgreSQL: {e}")
                 # Пробуем пересоздать подключение
@@ -307,8 +308,9 @@ def tabel():
         # Безопасная инициализация базы для Render
         if database_url:
             try:
-                # Проверяем подключение простым запросом
-                db.session.execute('SELECT 1')
+                # Проверяем подключение с text()
+                from sqlalchemy import text
+                db.session.execute(text('SELECT 1'))
             except Exception as e:
                 logger.error(f"Ошибка подключения к PostgreSQL в tabel: {e}")
                 # Пробуем инициализировать базу
