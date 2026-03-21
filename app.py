@@ -9,26 +9,16 @@ app.secret_key = "dilmurat_group_system_2026"
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # === КОНФИГУРАЦИЯ БАЗЫ ДАННЫХ ===
-database_url = os.environ.get('DATABASE_URL')
+database_url = os.getenv('DATABASE_URL')
 
 if database_url:
-    # Исправляем протокол для SQLAlchemy 1.4+
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    # Правильный внутренний URL базы Render с обязательным SSL
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a.virginia-postgres.render.com/bank_db_1wkx?sslmode=require'
     
-    # Добавляем правильный sslmode=require для Render
-    if "?sslmode" not in database_url:
-        database_url += "?sslmode=require"
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    
-    # КОНФИГУРАЦИЯ С ПРАВИЛЬНЫМ SSL
+    # Параметры SQLAlchemy для SSL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        "connect_args": {
-            "sslmode": "require"
-        },
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
+        'pool_pre_ping': True,
+        'connect_args': {'sslmode': 'require'}
     }
 else:
     # Локальная база (SQLite) - используем production.db где хранятся данные
@@ -36,6 +26,11 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'production.db')
 
 db = SQLAlchemy(app)
+
+# === СОЗДАНИЕ ТАБЛИЦ ===
+# Создаем таблицы один раз после инициализации
+with app.app_context():
+    db.create_all()
 
 # === МОДЕЛИ ===
 class Worker(db.Model):
@@ -476,4 +471,5 @@ def export_excel():
                      as_attachment=True, download_name="Report_KPD.xlsx")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
