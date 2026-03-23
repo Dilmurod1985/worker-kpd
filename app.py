@@ -138,7 +138,8 @@ with app.app_context():
                     Worker(worker_id='8', fio='Сотрудник 8', category='4', otdel='Kesib'),
                     Worker(worker_id='9', fio='Сотрудник 9', category='3', otdel='Kesib'),
                 ]
-                db.session.bulk_save_objects(workers)
+                for worker in workers:
+                    db.session.add(worker)
                 db.session.commit()
                 logger.info("Работники добавлены")
         except Exception as e:
