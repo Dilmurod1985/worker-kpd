@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from io import BytesIO
-from flask import Flask, render_template, request, redirect, url_for, send_file, current_app
+from flask import Flask, render_template, request, redirect, url_for, send_file
 from flask_sqlalchemy import SQLAlchemy
 
 # Добавляем логирование
@@ -17,10 +17,10 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 database_url = os.getenv('DATABASE_URL')
 
 if database_url:
-    # Правильный внутренний URL базы Render с обязательным sslmode
+    # Правильный внутренний URL базы Render с обязательным SSL
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a.virginia-postgres.render.com/bank_db_1wkx?sslmode=require'
     
-    # Параметры движка для SSL
+    # Параметры SQLAlchemy для SSL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
         'connect_args': {'sslmode': 'require'}
@@ -32,97 +32,15 @@ else:
 
 db = SQLAlchemy(app)
 
-# === МОДЕЛИ ===
-class Worker(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    worker_id = db.Column(db.String(20), unique=True)
-    fio = db.Column(db.String(100))
-    category = db.Column(db.String(50))
-    otdel = db.Column(db.String(100))
-
-class Record(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    worker_id = db.Column(db.String(20))
-    date = db.Column(db.String(20))
-    otdel = db.Column(db.String(100))
-    total_kpd = db.Column(db.Float)
-    kalibr = db.Column(db.Float)
-    sht = db.Column(db.Float)
-    shift = db.Column(db.String(20))
-    complexity_coefficient = db.Column(db.Float, default=1.0)
-
-# === ФУНКЦИИ РАСЧЕТА ===
-def get_complexity_coefficient(kalibr):
-    if kalibr is None or kalibr <= 0:
-        return 1.0
-    if kalibr <= 10:
-        return 1.5
-    elif kalibr <= 20:
-        return 1.3
-    elif kalibr <= 35:
-        return 1.15
-    else:
-        return 1.0
-
-def get_category_norm(category, kalibr=None, otdel=None):
-    if otdel != "Turk":
-        category_norms = {
-            "1": (300 + 450) / 2,
-            "2": (280 + 400) / 2,
-            "3": (250 + 350) / 2,
-            "4": (220 + 280) / 2,
-            "5": (100 + 180) / 2,
-        }
-        return category_norms.get(category, 140)
-    
-    if kalibr is None:
-        kalibr = 30
-    
-    standard_kalibrs = [20, 30, 40]
-    nearest_kalibr = min(standard_kalibrs, key=lambda x: abs(x - kalibr))
-    
-    plans_pieces = {
-        "1": {20: 15, 30: 12, 40: 10},
-        "2": {20: 13, 30: 10, 40: 9},
-        "3": {20: 11, 30: 8, 40: 7},
-        "4": {20: 9, 30: 7, 40: 6},
-        "5": {20: 8, 30: 6, 40: 5},
-    }
-    
-    pieces = plans_pieces.get(category, {20: 8, 30: 6, 40: 5}).get(nearest_kalibr, 6)
-    norm_kg = pieces * kalibr
-    return norm_kg
-
-def get_pieces_plan(category, kalibr, otdel):
-    if otdel != "Turk":
-        return None
-    if kalibr is None:
-        kalibr = 30
-    standard_kalibrs = [20, 30, 40]
-    nearest_kalibr = min(standard_kalibrs, key=lambda x: abs(x - kalibr))
-    plans_pieces = {
-        "1": {20: 15, 30: 12, 40: 10},
-        "2": {20: 13, 30: 10, 40: 9},
-        "3": {20: 11, 30: 8, 40: 7},
-        "4": {20: 9, 30: 7, 40: 6},
-        "5": {20: 8, 30: 6, 40: 5},
-    }
-    return plans_pieces.get(category, {20: 8, 30: 6, 40: 5}).get(nearest_kalibr, 6)
-
-def calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm):
-    if category_norm <= 0:
-        return 0
-    effective_weight = real_weight * complexity_coeff
-    percentage = (effective_weight / category_norm) * 100
-    return round(percentage, 1)
-
 # === СОЗДАНИЕ ТАБЛИЦ ===
+# Создаем таблицы один раз после инициализации
 with app.app_context():
     db.create_all()
     
     # Добавляем начальные данные для PostgreSQL
     if database_url:
         try:
+            # Проверяем есть ли работники
             workers_count = Worker.query.count()
             if workers_count == 0:
                 logger.info("Добавляем начальных работников для PostgreSQL")
@@ -140,7 +58,176 @@ with app.app_context():
             logger.error(f"Ошибка добавления начальных данных: {e}")
             db.session.rollback()
 
+# === МОДЕЛИ ===
+class Worker(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.String(20), unique=True)
+    fio = db.Column(db.String(100))
+    category = db.Column(db.String(50))
+    otdel = db.Column(db.String(100))  # Добавляем поле otdel
+
+class Record(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.String(20))
+    date = db.Column(db.String(20))
+    otdel = db.Column(db.String(100))
+    total_kpd = db.Column(db.Float)
+    kalibr = db.Column(db.Float)
+    sht = db.Column(db.Float)
+    shift = db.Column(db.String(20))
+    # Добавляем поле для сохранения коэффициента сложности
+    complexity_coefficient = db.Column(db.Float, default=1.0)
+
+# === ФУНКЦИИ РАСЧЕТА СЛОЖНОСТИ ===
+def get_complexity_coefficient(kalibr):
+    """
+    Возвращает коэффициент сложности на основе калибра (веса бабины)
+    
+    Args:
+        kalibr (float): вес бабины в кг
+        
+    Returns:
+        float: коэффициент сложности
+    """
+    if kalibr is None or kalibr <= 0:
+        return 1.0
+    
+    if kalibr <= 10:
+        return 1.5  # очень высокая сложность
+    elif kalibr <= 20:
+        return 1.3  # высокая сложность
+    elif kalibr <= 35:
+        return 1.15  # средняя сложность
+    else:
+        return 1.0  # базовая сложность
+
+def get_category_norm(category, kalibr=None, otdel=None):
+    """
+    Возвращает норму для категории с учетом калибра и позиции
+    
+    Args:
+        category (str): категория сотрудника
+        kalibr (float): вес бабины в кг
+        otdel (str): позиция/отдел сотрудника
+        
+    Returns:
+        float: норма в кг
+    """
+    # Если это не позиция Turk, используем старую логику
+    if otdel != "Turk":
+        # Старые нормы для других позиций
+        category_norms = {
+            "1": (300 + 450) / 2,  # 375 кг
+            "2": (280 + 400) / 2,  # 340 кг
+            "3": (250 + 350) / 2,  # 300 кг
+            "4": (220 + 280) / 2,  # 250 кг
+            "5": (100 + 180) / 2,  # 140 кг
+        }
+        return category_norms.get(category, 140)
+    
+    # Новая логика для позиции Turk
+    if kalibr is None:
+        kalibr = 30  # значение по умолчанию
+    
+    # Определяем стандартные калибры
+    standard_kalibrs = [20, 30, 40]
+    nearest_kalibr = min(standard_kalibrs, key=lambda x: abs(x - kalibr))
+    
+    # План в штуках для каждой категории (точные значения из таблицы)
+    plans_pieces = {
+        "1": {20: 15, 30: 12, 40: 10},
+        "2": {20: 13, 30: 10, 40: 9},
+        "3": {20: 11, 30: 8, 40: 7},
+        "4": {20: 9, 30: 7, 40: 6},
+        "5": {20: 8, 30: 6, 40: 5},
+    }
+    
+    # Получаем план в штуках
+    pieces = plans_pieces.get(category, {20: 8, 30: 6, 40: 5}).get(nearest_kalibr, 6)
+    
+    # Рассчитываем норму в кг: План (шт) * Калибр (кг)
+    norm_kg = pieces * kalibr
+    
+    return norm_kg
+
+def get_pieces_plan(category, kalibr, otdel):
+    """
+    Возвращает план в штуках для отображения
+    """
+    if otdel != "Turk":
+        return None
+    
+    if kalibr is None:
+        kalibr = 30
+    
+    standard_kalibrs = [20, 30, 40]
+    nearest_kalibr = min(standard_kalibrs, key=lambda x: abs(x - kalibr))
+    
+    plans_pieces = {
+        "1": {20: 15, 30: 12, 40: 10},
+        "2": {20: 13, 30: 10, 40: 9},
+        "3": {20: 11, 30: 8, 40: 7},
+        "4": {20: 9, 30: 7, 40: 6},
+        "5": {20: 8, 30: 6, 40: 5},
+    }
+    
+    return plans_pieces.get(category, {20: 8, 30: 6, 40: 5}).get(nearest_kalibr, 6)
+
+def calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm):
+    """
+    Рассчитывает процент выполнения плана с учетом сложности
+    
+    Args:
+        real_weight (float): реальный вес в кг
+        complexity_coeff (float): коэффициент сложности
+        category_norm (float): средняя норма категории
+        
+    Returns:
+        float: процент выполнения плана
+    """
+    if category_norm <= 0:
+        return 0
+    
+    effective_weight = real_weight * complexity_coeff
+    percentage = (effective_weight / category_norm) * 100
+    return round(percentage, 1)
+
+# === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ===
+# Создаем таблицы и добавляем недостающие поля для локальной базы
+if not database_url:
+    with app.app_context():
+        db.create_all()
+        
+        # === БЛОК АВТО-ИСПРАВЛЕНИЯ БАЗЫ ===
+        try:
+            from sqlalchemy import text
+            
+            # 1. Исправляем таблицу Record
+            result = db.session.execute(text("PRAGMA table_info(record)"))
+            columns = [row[1] for row in result]
+            if 'complexity_coefficient' not in columns:
+                db.session.execute(text("ALTER TABLE record ADD COLUMN complexity_coefficient REAL DEFAULT 1.0"))
+            
+            # 2. Исправляем таблицу Worker (Здесь была твоя ошибка!)
+            result = db.session.execute(text("PRAGMA table_info(worker)"))
+            columns = [row[1] for row in result]
+            if 'otdel' not in columns:
+                print("Добавляю пропущенную колонку otdel...")
+                db.session.execute(text("ALTER TABLE worker ADD COLUMN otdel VARCHAR(100) DEFAULT 'Qiyma'"))
+            
+            db.session.commit()
+            print("База данных успешно обновлена, данные сохранены!")
+        except Exception as e:
+            print(f"Ошибка при обновлении полей: {e}")
+            db.session.rollback()
+
 # === МАРШРУТЫ ===
+
+# Добавляем логирование
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @app.route('/')
 def index():
     try:
@@ -159,6 +246,7 @@ def workers():
                 parts = line.strip().split('\t')
                 if len(parts) >= 2:
                     wid = parts[0].strip()
+                    # Если такой ID уже есть, обновляем имя и категорию, а не выдаем ошибку
                     existing = Worker.query.filter_by(worker_id=wid).first()
                     if existing:
                         existing.fio = parts[1].strip()
@@ -182,41 +270,36 @@ def workers():
 
 @app.route('/delete_worker/<int:id>')
 def delete_worker(id):
-    try:
-        worker = Worker.query.get(id)
-        if worker:
-            db.session.delete(worker)
-            db.session.commit()
-    except Exception as e:
-        logger.error(f"Ошибка удаления работника: {e}")
+    worker = Worker.query.get(id)
+    if worker:
+        db.session.delete(worker)
+        db.session.commit()
     return redirect(url_for('workers'))
 
 @app.route('/bulk_input', methods=['POST'])
 def bulk_input():
-    try:
-        data = request.form.get('bulk_data', '')
-        date_str = request.form.get('date', '')
-        for line in data.strip().split('\n'):
-            p = line.split()
-            if len(p) >= 5:
-                wid = p[0].strip()
-                if Worker.query.filter_by(worker_id=wid).first():
-                    try:
-                        kalibr = float(p[3].replace(',', '.'))
-                        complexity_coeff = get_complexity_coefficient(kalibr)
-                        db.session.add(Record(
-                            worker_id=wid, date=date_str, otdel=p[1],
-                            total_kpd=float(p[2].replace(',', '.')), 
-                            kalibr=kalibr, 
-                            sht=float(p[4].replace(',', '.')), 
-                            shift=p[5] if len(p) > 5 else "Ночь",
-                            complexity_coefficient=complexity_coeff
-                        ))
-                    except:
-                        continue
-        db.session.commit()
-    except Exception as e:
-        logger.error(f"Ошибка массового ввода: {e}")
+    data = request.form.get('bulk_data', '')
+    date_str = request.form.get('date', '')
+    for line in data.strip().split('\n'):
+        p = line.split()
+        if len(p) >= 5:
+            wid = p[0].strip()
+            if Worker.query.filter_by(worker_id=wid).first():
+                try:
+                    # Получаем калибр и рассчитываем коэффициент сложности
+                    kalibr = float(p[3].replace(',', '.'))
+                    complexity_coeff = get_complexity_coefficient(kalibr)
+                    
+                    db.session.add(Record(
+                        worker_id=wid, date=date_str, otdel=p[1],
+                        total_kpd=float(p[2].replace(',', '.')), 
+                        kalibr=kalibr, 
+                        sht=float(p[4].replace(',', '.')), 
+                        shift=p[5] if len(p) > 5 else "Ночь",
+                        complexity_coefficient=complexity_coeff  # сохраняем коэффициент
+                    ))
+                except: continue
+    db.session.commit()
     return redirect(url_for('tabel'))
 
 @app.route('/tabel')
@@ -224,9 +307,11 @@ def tabel():
     try:
         logger.info("Страница табеля загружается")
         
+        # Получаем значения из полей поиска
         search_date = request.args.get('search_date', '')
         search_id = request.args.get('search_id', '')
 
+        # Безопасно получаем записи - если база пуста, вернется пустой список
         try:
             records = Record.query.all()
         except Exception as db_error:
@@ -235,14 +320,17 @@ def tabel():
         
         logger.info(f"Найдено записей: {len(records)}")
         
+        # Если записей нет, показываем пустую таблицу
         if not records:
             return render_template('tabel.html', summary=[], search_date=search_date, search_id=search_id,
                                total_day_tons=0, total_night_tons=0)
         
+        norms = {"1": 300, "2": 280, "3": 250, "4": 220, "5": 100}
         grouped = {}
 
         for r in records:
             key = (r.date, r.shift, r.worker_id)
+            # Безопасная обработка otdel (база может вернуть список или строку)
             raw_otdel = r.otdel
             if isinstance(raw_otdel, list):
                 current_pos = raw_otdel
@@ -252,7 +340,7 @@ def tabel():
 
             if key not in grouped:
                 grouped[key] = {
-                    'id_db': r.id,
+                    'id_db': r.id, # Важно: сохраняем ID именно этой записи
                     'date': r.date, 
                     'id': r.worker_id, 
                     'pos': current_pos,
@@ -262,6 +350,7 @@ def tabel():
                     'shift': r.shift
                 }
             else:
+                # Складываем только если это тот же человек в ту же смену
                 for p in current_pos:
                     if p not in grouped[key]['pos']:
                         grouped[key]['pos'].append(p)
@@ -270,22 +359,34 @@ def tabel():
         
         rows = []
         for data in grouped.values():
+            # --- ЛОГИКА ФИЛЬТРАЦИИ ---
+            # Если в поиске что-то есть, и оно не совпадает с данными — пропускаем эту строку
             if search_date and search_date != data['date']:
                 continue
             if search_id and search_id != data['id']:
                 continue
+            # ------------------------
 
             w = Worker.query.filter_by(worker_id=data['id']).first()
             if not w:
+                logger.warning(f"Не найден работник с ID: {data['id']}")
                 continue
             
+            # Получаем категорию и норму
             category = w.category if w else "5"
+            # data['pos'] уже список, берем первый отдел
             otdel = data['pos'][0] if data['pos'] and len(data['pos']) > 0 else "Qiyma"
             category_norm = get_category_norm(category, data['kalibr'], otdel)
+            
+            # Рассчитываем коэффициент сложности на основе калибра
             complexity_coeff = get_complexity_coefficient(data['kalibr'])
+            
+            # Рассчитываем процент выполнения с учетом сложности
             real_weight = data['summa']
             effective_weight = real_weight * complexity_coeff
             percentage = calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm)
+            
+            # Получаем план в штуках для отображения
             pieces_plan = get_pieces_plan(category, data['kalibr'], otdel)
             
             rows.append({
@@ -297,17 +398,19 @@ def tabel():
                 'pos': ", ".join(data['pos']) if isinstance(data['pos'], list) else str(data['pos']),
                 'kalibr': data['kalibr'], 
                 'sht': data['sht'], 
-                'summa': round(real_weight, 2),
-                'effective_weight': round(effective_weight, 2),
-                'complexity_coeff': complexity_coeff,
+                'summa': round(real_weight, 2),           # реальный вес
+                'effective_weight': round(effective_weight, 2),  # эффективный вес
+                'complexity_coeff': complexity_coeff,           # коэффициент сложности
                 'norma': category_norm, 
-                'pieces_plan': pieces_plan,
+                'pieces_plan': pieces_plan,                  # план в штуках
                 'percent': percentage, 
                 'shift': data['shift']
             })
 
+        # Сортировка: сначала те, у кого КПД < 80, затем по дате/смене
         rows.sort(key=lambda x: (x['percent'] >= 80, x['date'], x['shift']), reverse=False)
         
+        # Подсчет тоннажа по сменам
         total_day_kg = sum(row['summa'] for row in rows if row['shift'] == 'День')
         total_night_kg = sum(row['summa'] for row in rows if row['shift'] == 'Ночь')
         total_day_tons = round(total_day_kg / 1000, 2)
@@ -325,13 +428,16 @@ def delete_record(id):
     try:
         rec = Record.query.get(id)
         if rec:
+            # Удаляем только эту конкретную запись по первичному ключу
             db.session.delete(rec)
             db.session.commit()
             logger.info(f"Удалена запись с ID: {id}")
         
+        # Получаем текущие параметры для перенаправления
         search_date = request.form.get('search_date', request.args.get('search_date', ''))
         search_id = request.form.get('search_id', request.args.get('search_id', ''))
         
+        # Формируем URL с сохранением параметров
         params = []
         if search_date:
             params.append(f"search_date={search_date}")
@@ -352,6 +458,7 @@ def delete_multiple():
     try:
         from flask import request
         
+        # Получаем ID записей для удаления
         data = request.get_json()
         if not data or 'ids' not in data:
             return {'success': False, 'error': 'Не указаны ID записей'}
@@ -360,11 +467,13 @@ def delete_multiple():
         if not isinstance(ids, list) or not ids:
             return {'success': False, 'error': 'Некорректный формат ID'}
         
+        # Удаляем записи по первичным ключам
         deleted_count = 0
         for record_id in ids:
             try:
                 rec = Record.query.get(record_id)
                 if rec:
+                    # Удаляем только эту конкретную запись по первичному ключу
                     db.session.delete(rec)
                     deleted_count += 1
             except Exception as e:
@@ -382,25 +491,21 @@ def delete_multiple():
 
 @app.route('/export_excel')
 def export_excel():
-    try:
-        records = Record.query.all()
-        data_for_excel = []
-        for r in records:
-            w = Worker.query.filter_by(worker_id=r.worker_id).first()
-            data_for_excel.append({
-                'Дата': r.date, 'ID': r.worker_id, 'ФИО': w.fio if w else "-",
-                'КПД': r.total_kpd, 'Смена': r.shift
-            })
-        df = pd.DataFrame(data_for_excel).sort_values(by=['Дата', 'ID'])
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False)
-        output.seek(0)
-        return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                         as_attachment=True, download_name="Report_KPD.xlsx")
-    except Exception as e:
-        logger.error(f"Ошибка экспорта Excel: {e}")
-        return f"Ошибка: {e}", 500
+    records = Record.query.all()
+    data_for_excel = []
+    for r in records:
+        w = Worker.query.filter_by(worker_id=r.worker_id).first()
+        data_for_excel.append({
+            'Дата': r.date, 'ID': r.worker_id, 'ФИО': w.fio if w else "-",
+            'КПД': r.total_kpd, 'Смена': r.shift
+        })
+    df = pd.DataFrame(data_for_excel).sort_values(by=['Дата', 'ID'])
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
+    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     as_attachment=True, download_name="Report_KPD.xlsx")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
