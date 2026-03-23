@@ -17,8 +17,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 database_url = os.getenv('DATABASE_URL')
 
 if database_url:
-    # Правильный внутренний URL базы Render с обязательным sslmode
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a.virginia-postgres.render.com/bank_db_1wkx?sslmode=require'
+    # Внешний URL базы Render (самый стабильный вариант)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a.oregon-postgres.render.com:5432/bank_db_1wkx?sslmode=require'
     
     # Параметры движка для SSL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -118,26 +118,31 @@ def calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm
 
 # === СОЗДАНИЕ ТАБЛИЦ ===
 with app.app_context():
-    db.create_all()
-    
-    # Добавляем начальные данные для PostgreSQL
+    try:
+        db.create_all()
+        logger.info("Таблицы созданы или уже существуют")
+    except Exception as e:
+        logger.error(f"Ошибка создания таблиц: {str(e)}")
+        # Если база недоступна — не падаем полностью
+        pass
+
+    # Добавляем начальных работников ТОЛЬКО если таблица пустая
     if database_url:
         try:
             workers_count = Worker.query.count()
             if workers_count == 0:
-                logger.info("Добавляем начальных работников для PostgreSQL")
+                logger.info("Добавляем начальных работников")
                 workers = [
                     Worker(worker_id='5', fio='Дилмурат Бобомуродов', category='5', otdel='Qiyma'),
                     Worker(worker_id='7', fio='Сотрудник 7', category='5', otdel='Qiyma'),
                     Worker(worker_id='8', fio='Сотрудник 8', category='4', otdel='Kesib'),
                     Worker(worker_id='9', fio='Сотрудник 9', category='3', otdel='Kesib'),
                 ]
-                for worker in workers:
-                    db.session.add(worker)
+                db.session.bulk_save_objects(workers)
                 db.session.commit()
-                logger.info("Начальные работники добавлены")
+                logger.info("Работники добавлены")
         except Exception as e:
-            logger.error(f"Ошибка добавления начальных данных: {e}")
+            logger.error(f"Ошибка добавления работников: {str(e)}")
             db.session.rollback()
 
 # === МАРШРУТЫ ===
@@ -230,8 +235,12 @@ def tabel():
         try:
             records = Record.query.all()
         except Exception as db_error:
-            logger.error(f"Ошибка получения записей: {db_error}")
+            logger.error(f"Ошибка доступа к базе: {db_error}")
             records = []
+            # Возвращаем страницу с сообщением об ошибке
+            return render_template('tabel.html', summary=[], error="База временно недоступена", 
+                               search_date=search_date, search_id=search_id,
+                               total_day_tons=0, total_night_tons=0)
         
         logger.info(f"Найдено записей: {len(records)}")
         
@@ -275,36 +284,40 @@ def tabel():
             if search_id and search_id != data['id']:
                 continue
 
-            w = Worker.query.filter_by(worker_id=data['id']).first()
-            if not w:
+            try:
+                w = Worker.query.filter_by(worker_id=data['id']).first()
+                if not w:
+                    continue
+                
+                category = w.category if w else "5"
+                otdel = data['pos'][0] if data['pos'] and len(data['pos']) > 0 else "Qiyma"
+                category_norm = get_category_norm(category, data['kalibr'], otdel)
+                complexity_coeff = get_complexity_coefficient(data['kalibr'])
+                real_weight = data['summa']
+                effective_weight = real_weight * complexity_coeff
+                percentage = calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm)
+                pieces_plan = get_pieces_plan(category, data['kalibr'], otdel)
+                
+                rows.append({
+                    'db_id': data['id_db'],
+                    'date': data['date'],
+                    'id': data['id'],
+                    'fio': w.fio if w else "-",
+                    'cat': category, 
+                    'pos': ", ".join(data['pos']) if isinstance(data['pos'], list) else str(data['pos']),
+                    'kalibr': data['kalibr'], 
+                    'sht': data['sht'], 
+                    'summa': round(real_weight, 2),
+                    'effective_weight': round(effective_weight, 2),
+                    'complexity_coeff': complexity_coeff,
+                    'norma': category_norm, 
+                    'pieces_plan': pieces_plan,
+                    'percent': percentage, 
+                    'shift': data['shift']
+                })
+            except Exception as row_error:
+                logger.error(f"Ошибка обработки строки: {row_error}")
                 continue
-            
-            category = w.category if w else "5"
-            otdel = data['pos'][0] if data['pos'] and len(data['pos']) > 0 else "Qiyma"
-            category_norm = get_category_norm(category, data['kalibr'], otdel)
-            complexity_coeff = get_complexity_coefficient(data['kalibr'])
-            real_weight = data['summa']
-            effective_weight = real_weight * complexity_coeff
-            percentage = calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm)
-            pieces_plan = get_pieces_plan(category, data['kalibr'], otdel)
-            
-            rows.append({
-                'db_id': data['id_db'],
-                'date': data['date'],
-                'id': data['id'],
-                'fio': w.fio if w else "-",
-                'cat': category, 
-                'pos': ", ".join(data['pos']) if isinstance(data['pos'], list) else str(data['pos']),
-                'kalibr': data['kalibr'], 
-                'sht': data['sht'], 
-                'summa': round(real_weight, 2),
-                'effective_weight': round(effective_weight, 2),
-                'complexity_coeff': complexity_coeff,
-                'norma': category_norm, 
-                'pieces_plan': pieces_plan,
-                'percent': percentage, 
-                'shift': data['shift']
-            })
 
         rows.sort(key=lambda x: (x['percent'] >= 80, x['date'], x['shift']), reverse=False)
         
@@ -317,8 +330,8 @@ def tabel():
         return render_template('tabel.html', summary=rows, search_date=search_date, search_id=search_id,
                              total_day_tons=total_day_tons, total_night_tons=total_night_tons)
     except Exception as e:
-        logger.error(f"Ошибка страницы табеля: {e}")
-        return f"Ошибка: {e}", 500
+        logger.error(f"Критическая ошибка в /tabel: {e}")
+        return f"Ошибка сервера: {str(e)}", 500
 
 @app.route('/delete_record/<int:id>', methods=['POST'])
 def delete_record(id):
