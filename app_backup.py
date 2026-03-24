@@ -17,13 +17,12 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 database_url = os.getenv('DATABASE_URL')
 
 if database_url:
-    # Внутренний URL базы Render с правильным диалектом postgresql
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a/bank_db_1wkx?sslmode=require'
+    # Внешний URL базы Render (самый стабильный вариант)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a.oregon-postgres.render.com:5432/bank_db_1wkx?sslmode=require'
     
-    # Параметры движка (обязательно)
+    # Параметры движка для SSL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
-        'pool_recycle': 300,
         'connect_args': {'sslmode': 'require'}
     }
 else:
@@ -40,6 +39,17 @@ class Worker(db.Model):
     fio = db.Column(db.String(100))
     category = db.Column(db.String(50))
     otdel = db.Column(db.String(100))
+
+class Record(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.String(20))
+    date = db.Column(db.String(20))
+    otdel = db.Column(db.String(100))
+    total_kpd = db.Column(db.Float)
+    kalibr = db.Column(db.Float)
+    sht = db.Column(db.Float)
+    shift = db.Column(db.String(20))
+    complexity_coefficient = db.Column(db.Float, default=1.0)
 
 # === ФУНКЦИИ РАСЧЕТА ===
 def get_complexity_coefficient(kalibr):
@@ -112,10 +122,11 @@ with app.app_context():
         db.create_all()
         logger.info("Таблицы созданы или уже существуют")
     except Exception as e:
-        logger.error(f"Ошибка создания таблиц: {e}")
+        logger.error(f"Ошибка создания таблиц: {str(e)}")
+        # Если база недоступна — не падаем полностью
         pass
 
-    # Добавляем начальных работников
+    # Добавляем начальных работников ТОЛЬКО если таблица пустая
     if database_url:
         try:
             workers_count = Worker.query.count()
@@ -132,7 +143,7 @@ with app.app_context():
                 db.session.commit()
                 logger.info("Работники добавлены")
         except Exception as e:
-            logger.error(f"Ошибка добавления работников: {e}")
+            logger.error(f"Ошибка добавления работников: {str(e)}")
             db.session.rollback()
 
 # === МАРШРУТЫ ===
@@ -182,7 +193,7 @@ def workers():
             return render_template('workers.html', workers=all_workers)
         except Exception as db_error:
             logger.error(f"Ошибка получения работников: {db_error}")
-            return render_template('workers.html', workers=[], error="База временно недоступна")
+            return render_template('workers.html', workers=[], error="База временно недоступена")
     except Exception as e:
         logger.error(f"Ошибка в маршруте workers: {e}")
         return f"Ошибка сервера: {str(e)}", 500
@@ -211,23 +222,17 @@ def bulk_input():
                     try:
                         kalibr = float(p[3].replace(',', '.'))
                         complexity_coeff = get_complexity_coefficient(kalibr)
-                        
-                        # Используем функцию из database.py
-                        record_data = {
-                            'worker_id': wid,
-                            'date': date_str,
-                            'otdel': p[1],
-                            'total_kpd': float(p[2].replace(',', '.')),
-                            'kalibr': kalibr,
-                            'sht': float(p[4].replace(',', '.')),
-                            'shift': p[5] if len(p) > 5 else "Ночь",
-                            'complexity_coefficient': complexity_coeff
-                        }
-                        from database import add_record
-                        add_record(app, record_data)
-                    except Exception as record_error:
-                        logger.error(f"Ошибка добавления записи: {record_error}")
+                        db.session.add(Record(
+                            worker_id=wid, date=date_str, otdel=p[1],
+                            total_kpd=float(p[2].replace(',', '.')), 
+                            kalibr=kalibr, 
+                            sht=float(p[4].replace(',', '.')), 
+                            shift=p[5] if len(p) > 5 else "Ночь",
+                            complexity_coefficient=complexity_coeff
+                        ))
+                    except:
                         continue
+        db.session.commit()
     except Exception as e:
         logger.error(f"Ошибка массового ввода: {e}")
     return redirect(url_for('tabel'))
@@ -241,13 +246,12 @@ def tabel():
         search_id = request.args.get('search_id', '')
 
         try:
-            # Используем функцию из database.py
-            from database import get_all_records
-            records = get_all_records(app)
+            records = Record.query.all()
         except Exception as db_error:
             logger.error(f"Ошибка доступа к базе: {db_error}")
             records = []
-            return render_template('tabel.html', summary=[], error="База временно недоступна", 
+            # Возвращаем страницу с сообщением об ошибке
+            return render_template('tabel.html', summary=[], error="База временно недоступена", 
                                search_date=search_date, search_id=search_id,
                                total_day_tons=0, total_night_tons=0)
         
@@ -345,9 +349,10 @@ def tabel():
 @app.route('/delete_record/<int:id>', methods=['POST'])
 def delete_record(id):
     try:
-        from database import delete_record as delete_record_func
-        success = delete_record_func(app, id)
-        if success:
+        rec = Record.query.get(id)
+        if rec:
+            db.session.delete(rec)
+            db.session.commit()
             logger.info(f"Удалена запись с ID: {id}")
         
         search_date = request.form.get('search_date', request.args.get('search_date', ''))
@@ -372,7 +377,6 @@ def delete_record(id):
 def delete_multiple():
     try:
         from flask import request
-        from database import get_record_by_id, delete_record as delete_record_func
         
         data = request.get_json()
         if not data or 'ids' not in data:
@@ -385,27 +389,27 @@ def delete_multiple():
         deleted_count = 0
         for record_id in ids:
             try:
-                rec = get_record_by_id(app, record_id)
+                rec = Record.query.get(record_id)
                 if rec:
-                    success = delete_record_func(app, record_id)
-                    if success:
-                        deleted_count += 1
+                    db.session.delete(rec)
+                    deleted_count += 1
             except Exception as e:
                 logger.error(f"Ошибка удаления записи {record_id}: {e}")
                 continue
         
+        db.session.commit()
         logger.info(f"Удалено {deleted_count} записей")
         
         return {'success': True, 'deleted_count': deleted_count}
     except Exception as e:
         logger.error(f"Ошибка массового удаления: {e}")
+        db.session.rollback()
         return {'success': False, 'error': str(e)}
 
 @app.route('/export_excel')
 def export_excel():
     try:
-        from database import get_all_records
-        records = get_all_records(app)
+        records = Record.query.all()
         data_for_excel = []
         for r in records:
             w = Worker.query.filter_by(worker_id=r.worker_id).first()
