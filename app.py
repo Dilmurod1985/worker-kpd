@@ -41,6 +41,18 @@ class Worker(db.Model):
     category = db.Column(db.String(50))
     otdel = db.Column(db.String(100))
 
+class Record(db.Model):
+    __tablename__ = 'record'
+    id = db.Column(db.Integer, primary_key=True)
+    worker_id = db.Column(db.String(20))
+    date = db.Column(db.String(20))
+    otdel = db.Column(db.String(100))
+    total_kpd = db.Column(db.Float)
+    kalibr = db.Column(db.Float)
+    sht = db.Column(db.Float)
+    shift = db.Column(db.String(20))
+    complexity_coefficient = db.Column(db.Float, default=1.0)
+
 # === ФУНКЦИИ РАСЧЕТА ===
 def get_complexity_coefficient(kalibr):
     if kalibr is None or kalibr <= 0:
@@ -109,16 +121,39 @@ def calculate_efficiency_percentage(real_weight, complexity_coeff, category_norm
 # === СОЗДАНИЕ ТАБЛИЦ ===
 with app.app_context():
     try:
+        # Проверяем существующие таблицы
+        inspector = db.inspect(db.engine)
+        existing_tables = inspector.get_table_names()
+        logger.info(f"Существующие таблицы: {existing_tables}")
+        
+        # Создаем таблицы
         db.create_all()
         logger.info("Таблицы созданы или уже существуют")
+        
+        # Проверяем таблицы после создания
+        inspector = db.inspect(db.engine)
+        tables_after = inspector.get_table_names()
+        logger.info(f"Таблицы после создания: {tables_after}")
+        
+        # Проверяем соединение с базой
+        try:
+            from sqlalchemy import text
+            db.engine.execute(text("SELECT 1"))
+            logger.info("Соединение с базой данных работает")
+        except Exception as conn_error:
+            logger.error(f"Ошибка соединения с базой: {conn_error}")
+        
     except Exception as e:
         logger.error(f"Ошибка создания таблиц: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         pass
 
     # Добавляем начальных работников
     if database_url:
         try:
             workers_count = Worker.query.count()
+            logger.info(f"Текущее количество работников: {workers_count}")
             if workers_count == 0:
                 logger.info("Добавляем начальных работников")
                 workers = [
@@ -131,9 +166,19 @@ with app.app_context():
                     db.session.add(worker)
                 db.session.commit()
                 logger.info("Работники добавлены")
+                
+                # Проверяем после добавления
+                workers_after = Worker.query.all()
+                logger.info(f"Работники после добавления: {len(workers_after)}")
+                for w in workers_after:
+                    logger.info(f"  - {w.worker_id}: {w.fio}")
         except Exception as e:
             logger.error(f"Ошибка добавления работников: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             db.session.rollback()
+    else:
+        logger.info("Работаем с локальной базой SQLite")
 
 # === МАРШРУТЫ ===
 @app.route('/')
@@ -150,39 +195,65 @@ def workers():
     try:
         if request.method == 'POST':
             data = request.form.get('bulk_workers', '')
-            for line in data.strip().split('\n'):
-                parts = line.strip().split('\t')
-                if len(parts) >= 2:
-                    wid = parts[0].strip()
-                    try:
-                        existing = Worker.query.filter_by(worker_id=wid).first()
-                        if existing:
-                            existing.fio = parts[1].strip()
-                            existing.category = parts[2].strip() if len(parts) > 2 else existing.category
-                            existing.otdel = parts[3].strip() if len(parts) > 3 else existing.otdel
-                        else:
-                            db.session.add(Worker(
-                                worker_id=wid,
-                                fio=parts[1].strip(),
-                                category=parts[2].strip() if len(parts) > 2 else "5",
-                                otdel=parts[3].strip() if len(parts) > 3 else "Qiyma"
-                            ))
-                    except Exception as db_error:
-                        logger.error(f"Ошибка сохранения работника {wid}: {db_error}")
-                        continue
-            try:
-                db.session.commit()
-            except Exception as commit_error:
-                logger.error(f"Ошибка коммита: {commit_error}")
-                db.session.rollback()
+            logger.info(f"Получены данные для добавления работников: {repr(data[:100])}")
+            
+            if data.strip():
+                lines = data.strip().split('\n')
+                logger.info(f"Количество строк для обработки: {len(lines)}")
+                
+                for i, line in enumerate(lines):
+                    parts = line.strip().split('\t')
+                    logger.info(f"Строка {i+1}: {repr(line)}, частей: {len(parts)}")
+                    
+                    if len(parts) >= 2:
+                        worker_id = parts[0].strip()
+                        fio = parts[1].strip()
+                        category = parts[2].strip() if len(parts) > 2 else "5"
+                        otdel = parts[3].strip() if len(parts) > 3 else "Qiyma"
+                        
+                        logger.info(f"Обработка работника: ID={worker_id}, ФИО={fio}, Категория={category}, Отдел={otdel}")
+                        
+                        try:
+                            existing = Worker.query.filter_by(worker_id=worker_id).first()
+                            if existing:
+                                existing.fio = fio
+                                existing.category = category
+                                existing.otdel = otdel
+                                logger.info(f"Обновлен работник: {worker_id}")
+                            else:
+                                new_worker = Worker(
+                                    worker_id=worker_id,
+                                    fio=fio,
+                                    category=category,
+                                    otdel=otdel
+                                )
+                                db.session.add(new_worker)
+                                logger.info(f"Добавлен новый работник: {worker_id}")
+                        except Exception as worker_error:
+                            logger.error(f"Ошибка сохранения работника {worker_id}: {worker_error}")
+                            continue
+                
+                try:
+                    db.session.commit()
+                    logger.info("Изменения в сотрудниках сохранены в базу")
+                except Exception as commit_error:
+                    logger.error(f"Ошибка коммита: {commit_error}")
+                    db.session.rollback()
+            else:
+                logger.info("Пустые данные для добавления работников")
+            
             return redirect(url_for('workers'))
         
+        # GET запрос - отображаем всех сотрудников
         try:
             all_workers = Worker.query.order_by(Worker.worker_id.asc()).all()
+            logger.info(f"Найдено работников в базе: {len(all_workers)}")
+            for worker in all_workers:
+                logger.info(f"Работник: {worker.worker_id} - {worker.fio}")
             return render_template('workers.html', workers=all_workers)
         except Exception as db_error:
             logger.error(f"Ошибка получения работников: {db_error}")
-            return render_template('workers.html', workers=[], error="База временно недоступна")
+            return render_template('workers.html', workers=[], error="База временно недоступена")
     except Exception as e:
         logger.error(f"Ошибка в маршруте workers: {e}")
         return f"Ошибка сервера: {str(e)}", 500
@@ -203,33 +274,61 @@ def bulk_input():
     try:
         data = request.form.get('bulk_data', '')
         date_str = request.form.get('date', '')
-        for line in data.strip().split('\n'):
-            p = line.split()
-            if len(p) >= 5:
-                wid = p[0].strip()
-                if Worker.query.filter_by(worker_id=wid).first():
-                    try:
-                        kalibr = float(p[3].replace(',', '.'))
-                        complexity_coeff = get_complexity_coefficient(kalibr)
-                        
-                        # Используем функцию из database.py
-                        record_data = {
-                            'worker_id': wid,
-                            'date': date_str,
-                            'otdel': p[1],
-                            'total_kpd': float(p[2].replace(',', '.')),
-                            'kalibr': kalibr,
-                            'sht': float(p[4].replace(',', '.')),
-                            'shift': p[5] if len(p) > 5 else "Ночь",
-                            'complexity_coefficient': complexity_coeff
-                        }
-                        from database import add_record
-                        add_record(app, record_data)
-                    except Exception as record_error:
-                        logger.error(f"Ошибка добавления записи: {record_error}")
-                        continue
+        logger.info(f"Получены данные для bulk_input: дата={date_str}, данные={repr(data[:100])}")
+        
+        if data.strip():
+            lines = data.strip().split('\n')
+            logger.info(f"Количество строк для обработки: {len(lines)}")
+            
+            for i, line in enumerate(lines):
+                p = line.split()
+                logger.info(f"Строка {i+1}: {repr(line)}, элементов: {len(p)}")
+                
+                if len(p) >= 5:
+                    wid = p[0].strip()
+                    logger.info(f"Обработка записи для работника: {wid}")
+                    
+                    # Проверяем, существует ли работник
+                    worker = Worker.query.filter_by(worker_id=wid).first()
+                    if worker:
+                        logger.info(f"Работник {wid} найден: {worker.fio}")
+                        try:
+                            kalibr = float(p[3].replace(',', '.'))
+                            complexity_coeff = get_complexity_coefficient(kalibr)
+                            
+                            # Создаем запись напрямую через SQLAlchemy
+                            new_record = Record(
+                                worker_id=wid,
+                                date=date_str,
+                                otdel=p[1],
+                                total_kpd=float(p[2].replace(',', '.')),
+                                kalibr=kalibr,
+                                sht=float(p[4].replace(',', '.')),
+                                shift=p[5] if len(p) > 5 else "Ночь",
+                                complexity_coefficient=complexity_coeff
+                            )
+                            db.session.add(new_record)
+                            logger.info(f"Добавлена запись для работника {wid} за {date_str}")
+                        except Exception as record_error:
+                            logger.error(f"Ошибка добавления записи для {wid}: {record_error}")
+                            continue
+                    else:
+                        logger.warning(f"Работник {wid} не найден, запись пропущена")
+                else:
+                    logger.warning(f"Строка {i+1} имеет недостаточно элементов: {len(p)}")
+            
+            try:
+                db.session.commit()
+                logger.info("Все записи успешно сохранены в базу")
+            except Exception as commit_error:
+                logger.error(f"Ошибка коммита записей: {commit_error}")
+                db.session.rollback()
+        else:
+            logger.info("Пустые данные для bulk_input")
+        
     except Exception as e:
         logger.error(f"Ошибка массового ввода: {e}")
+    
     return redirect(url_for('tabel'))
 
 @app.route('/tabel')
@@ -241,13 +340,12 @@ def tabel():
         search_id = request.args.get('search_id', '')
 
         try:
-            # Используем функцию из database.py
-            from database import get_all_records
-            records = get_all_records(app)
+            # Получаем записи напрямую из базы
+            records = Record.query.all()
         except Exception as db_error:
             logger.error(f"Ошибка доступа к базе: {db_error}")
             records = []
-            return render_template('tabel.html', summary=[], error="База временно недоступна", 
+            return render_template('tabel.html', summary=[], error="База временно недоступена", 
                                search_date=search_date, search_id=search_id,
                                total_day_tons=0, total_night_tons=0)
         
@@ -345,9 +443,10 @@ def tabel():
 @app.route('/delete_record/<int:id>', methods=['POST'])
 def delete_record(id):
     try:
-        from database import delete_record as delete_record_func
-        success = delete_record_func(app, id)
-        if success:
+        record = Record.query.get(id)
+        if record:
+            db.session.delete(record)
+            db.session.commit()
             logger.info(f"Удалена запись с ID: {id}")
         
         search_date = request.form.get('search_date', request.args.get('search_date', ''))
@@ -372,7 +471,6 @@ def delete_record(id):
 def delete_multiple():
     try:
         from flask import request
-        from database import get_record_by_id, delete_record as delete_record_func
         
         data = request.get_json()
         if not data or 'ids' not in data:
@@ -385,27 +483,57 @@ def delete_multiple():
         deleted_count = 0
         for record_id in ids:
             try:
-                rec = get_record_by_id(app, record_id)
+                rec = Record.query.get(record_id)
                 if rec:
-                    success = delete_record_func(app, record_id)
-                    if success:
-                        deleted_count += 1
+                    db.session.delete(rec)
+                    deleted_count += 1
             except Exception as e:
                 logger.error(f"Ошибка удаления записи {record_id}: {e}")
                 continue
         
-        logger.info(f"Удалено {deleted_count} записей")
+        try:
+            db.session.commit()
+            logger.info(f"Удалено {deleted_count} записей")
+        except Exception as commit_error:
+            logger.error(f"Ошибка коммита при массовом удалении: {commit_error}")
+            db.session.rollback()
+            return {'success': False, 'error': 'Ошибка сохранения изменений'}
         
         return {'success': True, 'deleted_count': deleted_count}
     except Exception as e:
         logger.error(f"Ошибка массового удаления: {e}")
         return {'success': False, 'error': str(e)}
 
+@app.route('/test_db')
+def test_db():
+    try:
+        # Проверяем работников
+        workers = Worker.query.all()
+        worker_info = []
+        for w in workers:
+            worker_info.append(f"{w.worker_id}: {w.fio} ({w.category}, {w.otdel})")
+        
+        # Проверяем записи
+        records = Record.query.all()
+        record_info = []
+        for r in records:
+            record_info.append(f"{r.date}: {r.worker_id} - {r.total_kpd}kg")
+        
+        return f"""
+        <h2>Проверка базы данных</h2>
+        <h3>Работники ({len(workers)}):</h3>
+        <pre>{chr(10).join(worker_info)}</pre>
+        <h3>Записи ({len(records)}):</h3>
+        <pre>{chr(10).join(record_info)}</pre>
+        <a href="/">Назад</a>
+        """
+    except Exception as e:
+        return f"Ошибка: {str(e)}"
+
 @app.route('/export_excel')
 def export_excel():
     try:
-        from database import get_all_records
-        records = get_all_records(app)
+        records = Record.query.all()
         data_for_excel = []
         for r in records:
             w = Worker.query.filter_by(worker_id=r.worker_id).first()

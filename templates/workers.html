@@ -23,7 +23,7 @@
             <div class="card-body">
                 <h5>Массовое добавление / Обновление</h5>
                 <form method="POST">
-                    <textarea name="bulk_workers" class="form-control mb-2" rows="5" placeholder="ID [TAB] ФИО [TAB] Категория"></textarea>
+                    <textarea name="bulk_workers" class="form-control mb-2" rows="5" placeholder="ID[TAB]ФИО[TAB]Категория[TAB]Отдел&#10;Пример:&#10;5	Иванов Иван	5	Qiyma&#10;7	Петров Петр	4	Kesib"></textarea>
                     <button type="submit" class="btn btn-primary">Сохранить список</button>
                 </form>
             </div>
@@ -35,6 +35,7 @@
                     <th>ID</th>
                     <th>ФИО</th>
                     <th>Категория</th>
+                    <th>Отдел</th>
                     <th>Действие</th>
                 </tr>
             </thead>
@@ -44,6 +45,7 @@
                     <td>{{ worker.worker_id }}</td>
                     <td>{{ worker.fio }}</td>
                     <td>{{ worker.category }}</td>
+                    <td>{{ worker.otdel }}</td>
                     <td>
                         <a href="{{ url_for('delete_worker', id=worker.id) }}" 
                            class="btn btn-danger btn-sm" 
