@@ -17,8 +17,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 database_url = os.getenv('DATABASE_URL')
 
 if database_url:
-    # Внутренний URL базы Render с правильным диалектом postgresql
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a/bank_db_1wkx?sslmode=require'
+    # Внешний URL базы Render с правильным доменом
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://bank_db_1wkx_user:YFfVKou0OojY6x2Kf2KQDH6XFphP7h0h@dpg-d61fa9fpm1nc73879e70-a.oregon-postgres.render.com:5432/bank_db_1wkx?sslmode=require'
     
     # Параметры движка (обязательно)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
